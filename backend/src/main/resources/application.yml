@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: dailyquest
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dailyquest
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: dailyquest-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-security
+  expiration: 86400000
+
+# Swagger 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
