@@ -1,0 +1,145 @@
+package com.dailyquest.backend.dto;
+
+import com.dailyquest.backend.domain.Priority;
+import com.dailyquest.backend.domain.RecurrenceType;
+import com.dailyquest.backend.domain.Task;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public class TaskDto {
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CreateRequest {
+        
+        @NotBlank(message = "Title is required")
+        @Size(max = 255, message = "Title must be 255 characters or less")
+        private String title;
+        
+        private String description;
+        
+        private Priority priority;
+        
+        private LocalDate dueDate;
+        
+        private Long projectId;
+        
+        // Recurring task
+        private Boolean isRecurring;
+        private RecurrenceType recurrenceType;
+        private Integer recurrenceInterval;
+        private LocalDate recurrenceEndDate;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UpdateRequest {
+        
+        @Size(max = 255, message = "Title must be 255 characters or less")
+        private String title;
+        
+        private String description;
+        
+        private Priority priority;
+        
+        private LocalDate dueDate;
+        
+        private Long projectId;
+        
+        // Recurring task
+        private Boolean isRecurring;
+        private RecurrenceType recurrenceType;
+        private Integer recurrenceInterval;
+        private LocalDate recurrenceEndDate;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Response {
+        
+        private Long id;
+        private String title;
+        private String description;
+        private Priority priority;
+        private LocalDate dueDate;
+        private Boolean isCompleted;
+        private LocalDateTime completedAt;
+        
+        // Recurring task
+        private Boolean isRecurring;
+        private RecurrenceType recurrenceType;
+        private Integer recurrenceInterval;
+        private LocalDate recurrenceEndDate;
+        private Long parentTaskId;
+        
+        // Project info
+        private Long projectId;
+        private String projectName;
+        private String projectColor;
+        
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        public static Response from(Task task) {
+            return Response.builder()
+                    .id(task.getId())
+                    .title(task.getTitle())
+                    .description(task.getDescription())
+                    .priority(task.getPriority())
+                    .dueDate(task.getDueDate())
+                    .isCompleted(task.getIsCompleted())
+                    .completedAt(task.getCompletedAt())
+                    .isRecurring(task.getIsRecurring())
+                    .recurrenceType(task.getRecurrenceType())
+                    .recurrenceInterval(task.getRecurrenceInterval())
+                    .recurrenceEndDate(task.getRecurrenceEndDate())
+                    .parentTaskId(task.getParentTask() != null ? task.getParentTask().getId() : null)
+                    .projectId(task.getProject() != null ? task.getProject().getId() : null)
+                    .projectName(task.getProject() != null ? task.getProject().getName() : null)
+                    .projectColor(task.getProject() != null ? task.getProject().getColor() : null)
+                    .createdAt(task.getCreatedAt())
+                    .updatedAt(task.getUpdatedAt())
+                    .build();
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ListResponse {
+        private Long id;
+        private String title;
+        private Priority priority;
+        private LocalDate dueDate;
+        private Boolean isCompleted;
+        private Boolean isRecurring;
+        private Long projectId;
+        private String projectName;
+        private String projectColor;
+
+        public static ListResponse from(Task task) {
+            return ListResponse.builder()
+                    .id(task.getId())
+                    .title(task.getTitle())
+                    .priority(task.getPriority())
+                    .dueDate(task.getDueDate())
+                    .isCompleted(task.getIsCompleted())
+                    .isRecurring(task.getIsRecurring())
+                    .projectId(task.getProject() != null ? task.getProject().getId() : null)
+                    .projectName(task.getProject() != null ? task.getProject().getName() : null)
+                    .projectColor(task.getProject() != null ? task.getProject().getColor() : null)
+                    .build();
+        }
+    }
+}

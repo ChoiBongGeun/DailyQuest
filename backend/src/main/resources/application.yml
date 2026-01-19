@@ -2,16 +2,18 @@ spring:
   application:
     name: dailyquest
   datasource:
-    url: jdbc:postgresql://localhost:5432/dailyquest
+    url: jdbc:postgresql://localhost:5434/dailyquest?useUnicode=true&characterEncoding=UTF-8
     username: postgres
     password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
       hibernate:
-        format_sql: true
+        ddl-auto: update
+      properties:
+        hibernate:
+          format_sql: true
+      show-sql: true
 
 server:
   port: 8080
