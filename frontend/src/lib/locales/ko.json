@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "DailyQuest",
+    "appDescription": "매일의 목표를 달성하세요",
+    "loading": "처리 중...",
+    "submit": "제출",
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "수정",
+    "close": "닫기",
+    "confirm": "확인",
+    "required": "필수",
+    "optional": "선택",
+    "search": "검색",
+    "filter": "필터",
+    "sort": "정렬",
+    "all": "전체",
+    "today": "오늘",
+    "week": "이번 주",
+    "month": "이번 달",
+    "year": "올해"
+  },
+
+  "auth": {
+    "login": "로그인",
+    "signup": "회원가입",
+    "logout": "로그아웃",
+    "email": "이메일",
+    "password": "비밀번호",
+    "passwordConfirm": "비밀번호 확인",
+    "nickname": "닉네임",
+    "loginTitle": "로그인",
+    "signupTitle": "회원가입",
+    "noAccount": "계정이 없으신가요?",
+    "hasAccount": "이미 계정이 있으신가요?",
+    "emailPlaceholder": "example@email.com",
+    "passwordPlaceholder": "••••••••",
+    "nicknamePlaceholder": "홍길동",
+    "emailError": "올바른 이메일 형식이 아닙니다.",
+    "passwordError": "비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다.",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+    "nicknameError": "닉네임은 2자 이상이어야 합니다.",
+    "loginError": "로그인에 실패했습니다.",
+    "signupError": "회원가입에 실패했습니다.",
+    "passwordHelp": "8자 이상, 영문과 숫자 포함",
+    "nicknameHelp": "2자 이상 입력해주세요",
+    "createAccount": "새로운 계정을 만들어보세요"
+  },
+
+  "nav": {
+    "dashboard": "대시보드",
+    "today": "오늘",
+    "week": "이번 주",
+    "all": "전체",
+    "projects": "프로젝트",
+    "settings": "설정",
+    "notifications": "알림"
+  },
+
+  "task": {
+    "title": "할 일",
+    "newTask": "새 할 일",
+    "addTask": "할 일 추가",
+    "editTask": "할 일 수정",
+    "deleteTask": "할 일 삭제",
+    "completeTask": "완료",
+    "taskTitle": "제목",
+    "taskDescription": "설명",
+    "priority": "우선순위",
+    "dueDate": "마감일",
+    "project": "프로젝트",
+    "recurring": "반복",
+    "high": "높음",
+    "medium": "보통",
+    "low": "낮음",
+    "daily": "매일",
+    "weekly": "매주",
+    "monthly": "매월",
+    "noTasks": "할 일이 없습니다",
+    "noTasksDesc": "새로운 할 일을 추가해보세요",
+    "todayTasks": "오늘의 할 일",
+    "weekTasks": "이번 주 할 일",
+    "overdueTasks": "지연된 할 일",
+    "completedTasks": "완료한 할 일",
+    "pendingTasks": "진행 중"
+  },
+
+  "project": {
+    "title": "프로젝트",
+    "newProject": "새 프로젝트",
+    "addProject": "프로젝트 추가",
+    "editProject": "프로젝트 수정",
+    "deleteProject": "프로젝트 삭제",
+    "projectName": "프로젝트 이름",
+    "projectColor": "색상",
+    "noProjects": "프로젝트가 없습니다",
+    "personal": "개인",
+    "work": "업무"
+  },
+
+  "dashboard": {
+    "title": "대시보드",
+    "welcome": "오늘도 힘차게 시작해보세요!",
+    "stats": "통계",
+    "totalTasks": "총 할 일",
+    "completed": "완료한 할 일",
+    "pending": "진행 중",
+    "overdue": "지연됨",
+    "completionRate": "완료율",
+    "weekSummary": "이번 주 요약",
+    "trend": "vs 지난주"
+  },
+
+  "landing": {
+    "hero": {
+      "title": "DailyQuest",
+      "subtitle": "매일의 목표를 달성하고 성취감을 느껴보세요",
+      "cta": "무료로 시작하기",
+      "login": "로그인"
+    },
+    "features": {
+      "title": "핵심 기능",
+      "subtitle": "DailyQuest의 강력한 기능을 경험해보세요",
+      "simple": {
+        "title": "간편한 할 일 관리",
+        "desc": "직관적인 UI로 빠르게 할 일을 추가하고 관리하세요"
+      },
+      "smart": {
+        "title": "스마트 일정",
+        "desc": "반복 일정과 마감일 알림으로 놓치지 마세요"
+      },
+      "tracking": {
+        "title": "진행률 추적",
+        "desc": "대시보드에서 한눈에 진행 상황을 파악하세요"
+      },
+      "fast": {
+        "title": "빠르고 가벼운",
+        "desc": "최적화된 성능으로 빠른 작업 처리"
+      }
+    },
+    "cta": {
+      "title": "지금 바로 시작하세요",
+      "subtitle": "무료로 DailyQuest를 사용하고 매일의 목표를 달성하세요",
+      "button": "무료 회원가입"
+    },
+    "footer": {
+      "copyright": "© 2026 DailyQuest. All rights reserved."
+    }
+  },
+
+  "date": {
+    "dday": "D-Day",
+    "daysAgo": "일 전",
+    "weeksAgo": "주 전",
+    "monthsAgo": "개월 전",
+    "yearsAgo": "년 전",
+    "hoursAgo": "시간 전",
+    "minutesAgo": "분 전",
+    "justNow": "방금 전",
+    "yesterday": "어제"
+  },
+
+  "validation": {
+    "required": "필수 항목입니다",
+    "emailInvalid": "올바른 이메일 주소를 입력해주세요",
+    "passwordTooShort": "비밀번호는 최소 8자 이상이어야 합니다",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다"
+  },
+
+  "error": {
+    "generic": "오류가 발생했습니다",
+    "network": "네트워크 연결을 확인해주세요",
+    "unauthorized": "로그인이 필요합니다",
+    "forbidden": "권한이 없습니다",
+    "notFound": "요청하신 페이지를 찾을 수 없습니다",
+    "serverError": "서버 오류가 발생했습니다"
+  },
+
+  "success": {
+    "taskCreated": "할 일이 추가되었습니다",
+    "taskUpdated": "할 일이 수정되었습니다",
+    "taskDeleted": "할 일이 삭제되었습니다",
+    "taskCompleted": "할 일을 완료했습니다",
+    "projectCreated": "프로젝트가 생성되었습니다",
+    "projectUpdated": "프로젝트가 수정되었습니다",
+    "projectDeleted": "프로젝트가 삭제되었습니다",
+    "loginSuccess": "로그인되었습니다",
+    "signupSuccess": "회원가입이 완료되었습니다"
+  }
+}

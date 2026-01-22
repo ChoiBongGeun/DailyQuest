@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "DailyQuest",
+    "appDescription": "Achieve your daily goals",
+    "loading": "Loading...",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "required": "Required",
+    "optional": "Optional",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "all": "All",
+    "today": "Today",
+    "week": "This Week",
+    "month": "This Month",
+    "year": "This Year"
+  },
+
+  "auth": {
+    "login": "Log In",
+    "signup": "Sign Up",
+    "logout": "Log Out",
+    "email": "Email",
+    "password": "Password",
+    "passwordConfirm": "Confirm Password",
+    "nickname": "Nickname",
+    "loginTitle": "Log In",
+    "signupTitle": "Sign Up",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "emailPlaceholder": "example@email.com",
+    "passwordPlaceholder": "••••••••",
+    "nicknamePlaceholder": "John Doe",
+    "emailError": "Please enter a valid email address.",
+    "passwordError": "Password must be at least 8 characters with letters and numbers.",
+    "passwordMismatch": "Passwords do not match.",
+    "nicknameError": "Nickname must be at least 2 characters.",
+    "loginError": "Login failed.",
+    "signupError": "Sign up failed.",
+    "passwordHelp": "8+ characters, letters and numbers",
+    "nicknameHelp": "At least 2 characters",
+    "createAccount": "Create a new account"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "today": "Today",
+    "week": "This Week",
+    "all": "All",
+    "projects": "Projects",
+    "settings": "Settings",
+    "notifications": "Notifications"
+  },
+
+  "task": {
+    "title": "Tasks",
+    "newTask": "New Task",
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "completeTask": "Complete",
+    "taskTitle": "Title",
+    "taskDescription": "Description",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "project": "Project",
+    "recurring": "Recurring",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "noTasks": "No tasks",
+    "noTasksDesc": "Add a new task to get started",
+    "todayTasks": "Today's Tasks",
+    "weekTasks": "This Week's Tasks",
+    "overdueTasks": "Overdue Tasks",
+    "completedTasks": "Completed Tasks",
+    "pendingTasks": "Pending"
+  },
+
+  "project": {
+    "title": "Projects",
+    "newProject": "New Project",
+    "addProject": "Add Project",
+    "editProject": "Edit Project",
+    "deleteProject": "Delete Project",
+    "projectName": "Project Name",
+    "projectColor": "Color",
+    "noProjects": "No projects",
+    "personal": "Personal",
+    "work": "Work"
+  },
+
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Let's have a great day!",
+    "stats": "Statistics",
+    "totalTasks": "Total Tasks",
+    "completed": "Completed",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "completionRate": "Completion Rate",
+    "weekSummary": "Weekly Summary",
+    "trend": "vs last week"
+  },
+
+  "landing": {
+    "hero": {
+      "title": "DailyQuest",
+      "subtitle": "Achieve your daily goals and feel accomplished",
+      "cta": "Get Started Free",
+      "login": "Log In"
+    },
+    "features": {
+      "title": "Key Features",
+      "subtitle": "Experience DailyQuest's powerful features",
+      "simple": {
+        "title": "Simple Task Management",
+        "desc": "Add and manage tasks quickly with an intuitive UI"
+      },
+      "smart": {
+        "title": "Smart Schedule",
+        "desc": "Never miss a deadline with recurring tasks and reminders"
+      },
+      "tracking": {
+        "title": "Progress Tracking",
+        "desc": "View your progress at a glance on the dashboard"
+      },
+      "fast": {
+        "title": "Fast and Lightweight",
+        "desc": "Optimized performance for quick task processing"
+      }
+    },
+    "cta": {
+      "title": "Get Started Now",
+      "subtitle": "Use DailyQuest for free and achieve your daily goals",
+      "button": "Sign Up Free"
+    },
+    "footer": {
+      "copyright": "© 2026 DailyQuest. All rights reserved."
+    }
+  },
+
+  "date": {
+    "dday": "D-Day",
+    "daysAgo": "days ago",
+    "weeksAgo": "weeks ago",
+    "monthsAgo": "months ago",
+    "yearsAgo": "years ago",
+    "hoursAgo": "hours ago",
+    "minutesAgo": "minutes ago",
+    "justNow": "just now",
+    "yesterday": "yesterday"
+  },
+
+  "validation": {
+    "required": "This field is required",
+    "emailInvalid": "Please enter a valid email address",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match"
+  },
+
+  "error": {
+    "generic": "An error occurred",
+    "network": "Please check your network connection",
+    "unauthorized": "Login required",
+    "forbidden": "Access denied",
+    "notFound": "Page not found",
+    "serverError": "Server error occurred"
+  },
+
+  "success": {
+    "taskCreated": "Task created",
+    "taskUpdated": "Task updated",
+    "taskDeleted": "Task deleted",
+    "taskCompleted": "Task completed",
+    "projectCreated": "Project created",
+    "projectUpdated": "Project updated",
+    "projectDeleted": "Project deleted",
+    "loginSuccess": "Logged in successfully",
+    "signupSuccess": "Sign up completed"
+  }
+}

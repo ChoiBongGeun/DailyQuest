@@ -55,7 +55,6 @@ public class Task {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    // Recurring task fields
     @Column(name = "is_recurring")
     @Builder.Default
     private Boolean isRecurring = false;
@@ -87,7 +86,6 @@ public class Task {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Business methods
     public void updateTitle(String title) {
         this.title = title;
     }
@@ -114,14 +112,6 @@ public class Task {
         this.completedAt = null;
     }
 
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public void setRecurring(RecurrenceType type, Integer interval, LocalDate endDate) {
         this.isRecurring = true;
         this.recurrenceType = type;
@@ -136,9 +126,10 @@ public class Task {
         this.recurrenceEndDate = null;
     }
 
-    public void setParentTask(Task parentTask) {
-        this.parentTask = parentTask;
+    public void changeProject(Project project) {
+        this.project = project;
     }
+
 
     public boolean isRecurringTask() {
         return Boolean.TRUE.equals(this.isRecurring);

@@ -136,7 +136,7 @@ public class TaskService {
         if (request.getProjectId() != null) {
             Project project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
-            task.setProject(project);
+            task.changeProject(project);
         }
 
         if (Boolean.TRUE.equals(request.getIsRecurring())) {

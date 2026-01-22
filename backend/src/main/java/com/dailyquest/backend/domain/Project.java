@@ -39,16 +39,11 @@ public class Project {
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
-    // Business methods
     public void updateName(String name) {
         this.name = name;
     }
 
     public void updateColor(String color) {
         this.color = color;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 }
