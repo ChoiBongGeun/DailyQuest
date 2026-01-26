@@ -23,24 +23,24 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 }) => {
   const colorStyles = {
     primary: {
-      bg: 'bg-primary-100',
-      icon: 'text-primary-600',
-      text: 'text-primary-700',
+      bg: 'bg-primary-100 dark:bg-primary-900/30',
+      icon: 'text-primary-600 dark:text-primary-400',
+      text: 'text-primary-700 dark:text-primary-300',
     },
     success: {
-      bg: 'bg-success-light',
-      icon: 'text-success-dark',
-      text: 'text-success-dark',
+      bg: 'bg-success-light dark:bg-success/20',
+      icon: 'text-success-dark dark:text-success',
+      text: 'text-success-dark dark:text-success',
     },
     warning: {
-      bg: 'bg-warning-light',
-      icon: 'text-warning-dark',
-      text: 'text-warning-dark',
+      bg: 'bg-warning-light dark:bg-warning/20',
+      icon: 'text-warning-dark dark:text-warning',
+      text: 'text-warning-dark dark:text-warning',
     },
     danger: {
-      bg: 'bg-error-light',
-      icon: 'text-error-dark',
-      text: 'text-error-dark',
+      bg: 'bg-error-light dark:bg-error/20',
+      icon: 'text-error-dark dark:text-error',
+      text: 'text-error-dark dark:text-error',
     },
   };
 
@@ -50,8 +50,12 @@ export const StatsCard: React.FC<StatsCardProps> = ({
     <Card padding="md" className="hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-neutral-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-neutral-900 mb-2">{value}</p>
+          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+            {title}
+          </p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+            {value}
+          </p>
           
           {trend && (
             <div className="flex items-center gap-1">
@@ -63,7 +67,9 @@ export const StatsCard: React.FC<StatsCardProps> = ({
               >
                 {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
               </span>
-              <span className="text-xs text-neutral-500">vs 지난주</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-500">
+                vs 지난주
+              </span>
             </div>
           )}
         </div>
