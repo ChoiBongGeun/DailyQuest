@@ -2,6 +2,8 @@ package com.dailyquest.backend.service;
 
 import com.dailyquest.backend.domain.*;
 import com.dailyquest.backend.dto.TaskDto;
+import com.dailyquest.backend.exception.BusinessException;
+import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -105,11 +107,33 @@ class TaskServiceTest {
         given(taskRepository.findById(1L)).willReturn(Optional.of(testTask));
 
         // when
-        TaskDto.Response response = taskService.getTask(1L);
+        TaskDto.Response response = taskService.getTask(1L, 1L);
 
         // then
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getTitle()).isEqualTo("Test Task");
+    }
+
+    @Test
+    @DisplayName("Get task fails when task owner is different")
+    void getTask_NoPermission() {
+        User otherUser = User.builder()
+                .id(2L)
+                .email("other@test.com")
+                .password("password")
+                .nickname("other")
+                .build();
+        Task otherUserTask = Task.builder()
+                .id(99L)
+                .user(otherUser)
+                .title("Other Task")
+                .build();
+
+        given(taskRepository.findById(99L)).willReturn(Optional.of(otherUserTask));
+
+        assertThatThrownBy(() -> taskService.getTask(1L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.NO_PERMISSION.getMessage());
     }
 
     @Test
@@ -119,7 +143,7 @@ class TaskServiceTest {
         given(taskRepository.findById(1L)).willReturn(Optional.of(testTask));
 
         // when
-        TaskDto.Response response = taskService.completeTask(1L);
+        TaskDto.Response response = taskService.completeTask(1L, 1L);
 
         // then
         assertThat(testTask.getIsCompleted()).isTrue();
@@ -145,7 +169,7 @@ class TaskServiceTest {
         given(taskRepository.save(any(Task.class))).willReturn(recurringTask);
 
         // when
-        taskService.completeTask(1L);
+        taskService.completeTask(1L, 1L);
 
         // then
         assertThat(recurringTask.getIsCompleted()).isTrue();
@@ -175,7 +199,7 @@ class TaskServiceTest {
         given(taskRepository.findById(1L)).willReturn(Optional.of(testTask));
 
         // when
-        taskService.deleteTask(1L);
+        taskService.deleteTask(1L, 1L);
 
         // then
         verify(taskRepository).delete(testTask);

@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "exclude": [],
+  "include": [
+    "./i18n-type-error-check.tsx",
+    "../../types/i18next.d.ts"
+  ]
+}

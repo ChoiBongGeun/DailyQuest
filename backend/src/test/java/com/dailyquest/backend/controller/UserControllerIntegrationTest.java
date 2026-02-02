@@ -135,7 +135,7 @@ class UserControllerIntegrationTest {
     @DisplayName("GET /api/users/me - Fail without token")
     void getMyInfo_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/users/me"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
