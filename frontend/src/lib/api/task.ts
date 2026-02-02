@@ -1,81 +1,63 @@
-import { apiClient } from '../api-client';
+import axiosInstance from '../api-client';
 import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types';
+import { unwrapApiResponse } from './response';
+
+const mapTask = (task: Task): Task => task;
 
 export const taskApi = {
-  /**
-   * 전체 할 일 목록 조회
-   */
   getAll: async (): Promise<Task[]> => {
-    return apiClient.get('/api/tasks');
+    const response = await axiosInstance.get('/api/tasks');
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
-  /**
-   * 할 일 상세 조회
-   */
   getById: async (id: number): Promise<Task> => {
-    return apiClient.get(`/api/tasks/${id}`);
+    const response = await axiosInstance.get(`/api/tasks/${id}`);
+    return mapTask(unwrapApiResponse<Task>(response));
   },
 
-  /**
-   * 할 일 생성
-   */
   create: async (data: TaskCreateRequest): Promise<Task> => {
-    return apiClient.post('/api/tasks', data);
+    const response = await axiosInstance.post('/api/tasks', data);
+    return mapTask(unwrapApiResponse<Task>(response));
   },
 
-  /**
-   * 할 일 수정
-   */
   update: async (id: number, data: TaskUpdateRequest): Promise<Task> => {
-    return apiClient.put(`/api/tasks/${id}`, data);
+    const response = await axiosInstance.put(`/api/tasks/${id}`, data);
+    return mapTask(unwrapApiResponse<Task>(response));
   },
 
-  /**
-   * 할 일 삭제
-   */
   delete: async (id: number): Promise<void> => {
-    return apiClient.delete(`/api/tasks/${id}`);
+    const response = await axiosInstance.delete(`/api/tasks/${id}`);
+    unwrapApiResponse(response);
   },
 
-  /**
-   * 할 일 완료 토글
-   */
-  toggleComplete: async (id: number): Promise<Task> => {
-    return apiClient.patch(`/api/tasks/${id}/complete`);
+  setComplete: async (id: number, isCompleted: boolean): Promise<Task> => {
+    const endpoint = isCompleted ? 'complete' : 'uncomplete';
+    const response = await axiosInstance.patch(`/api/tasks/${id}/${endpoint}`);
+    return mapTask(unwrapApiResponse<Task>(response));
   },
 
-  /**
-   * 오늘 할 일 조회
-   */
   getToday: async (): Promise<Task[]> => {
-    return apiClient.get('/api/tasks/today');
+    const response = await axiosInstance.get('/api/tasks/today');
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
-  /**
-   * 이번 주 할 일 조회
-   */
   getThisWeek: async (): Promise<Task[]> => {
-    return apiClient.get('/api/tasks/week');
+    const response = await axiosInstance.get('/api/tasks/week');
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
-  /**
-   * 지난 할 일 조회
-   */
   getOverdue: async (): Promise<Task[]> => {
-    return apiClient.get('/api/tasks/overdue');
+    const response = await axiosInstance.get('/api/tasks/overdue');
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
-  /**
-   * 프로젝트별 할 일 조회
-   */
   getByProject: async (projectId: number): Promise<Task[]> => {
-    return apiClient.get(`/api/tasks/project/${projectId}`);
+    const response = await axiosInstance.get(`/api/tasks/project/${projectId}`);
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
-  /**
-   * 우선순위별 할 일 조회
-   */
   getByPriority: async (priority: string): Promise<Task[]> => {
-    return apiClient.get(`/api/tasks/priority/${priority}`);
+    const response = await axiosInstance.get(`/api/tasks/priority/${priority}`);
+    return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 };

@@ -5,6 +5,7 @@ import com.dailyquest.backend.dto.ProjectDto;
 import com.dailyquest.backend.exception.DuplicateException;
 import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.ResourceNotFoundException;
+import com.dailyquest.backend.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,14 +45,29 @@ public class ProjectService {
         return ProjectDto.Response.from(savedProject);
     }
 
-    public ProjectDto.Response getProject(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+    public ProjectDto.Response getProject(Long userId, Long projectId) {
+        Project project = getOwnedProject(userId, projectId);
 
         long taskCount = taskRepository.countByProjectId(projectId);
         long completedCount = taskRepository.countByProjectIdAndIsCompleted(projectId, true);
 
         return ProjectDto.Response.from(project, taskCount, completedCount);
+    }
+
+    public ProjectDto.StatsResponse getProjectStats(Long userId, Long projectId) {
+        Project project = getOwnedProject(userId, projectId);
+
+        long taskCount = taskRepository.countByProjectId(project.getId());
+        long completedCount = taskRepository.countByProjectIdAndIsCompleted(project.getId(), true);
+        double completionRate = taskCount > 0
+                ? Math.round((double) completedCount / taskCount * 100 * 10) / 10.0
+                : 0.0;
+
+        return ProjectDto.StatsResponse.builder()
+                .totalTasks(taskCount)
+                .completedTasks(completedCount)
+                .completionRate(completionRate)
+                .build();
     }
 
     public List<ProjectDto.Response> getAllProjects(Long userId) {
@@ -66,9 +82,8 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectDto.Response updateProject(Long projectId, ProjectDto.UpdateRequest request) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+    public ProjectDto.Response updateProject(Long userId, Long projectId, ProjectDto.UpdateRequest request) {
+        Project project = getOwnedProject(userId, projectId);
 
         if (request.getName() != null) {
             if (projectRepository.existsByUserIdAndName(project.getUser().getId(), request.getName())
@@ -91,11 +106,21 @@ public class ProjectService {
     }
 
     @Transactional
-    public void deleteProject(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+    public void deleteProject(Long userId, Long projectId) {
+        Project project = getOwnedProject(userId, projectId);
 
         projectRepository.delete(project);
         log.info("Project deleted: id={}", projectId);
+    }
+
+    private Project getOwnedProject(Long userId, Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        return project;
     }
 }

@@ -1,32 +1,34 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/atoms/Button';
 import { CheckCircle2, Calendar, TrendingUp, Zap } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const features = [
     {
       icon: CheckCircle2,
-      title: '간편한 할 일 관리',
-      description: '직관적인 UI로 빠르게 할 일을 추가하고 관리하세요',
+      title: t('landing.features.simple.title'),
+      description: t('landing.features.simple.desc'),
     },
     {
       icon: Calendar,
-      title: '스마트 일정',
-      description: '반복 일정과 마감일 알림으로 놓치지 마세요',
+      title: t('landing.features.smart.title'),
+      description: t('landing.features.smart.desc'),
     },
     {
       icon: TrendingUp,
-      title: '진행률 추적',
-      description: '대시보드에서 한눈에 진행 상황을 파악하세요',
+      title: t('landing.features.tracking.title'),
+      description: t('landing.features.tracking.desc'),
     },
     {
       icon: Zap,
-      title: '빠르고 가벼운',
-      description: '최적화된 성능으로 빠른 작업 처리',
+      title: t('landing.features.fast.title'),
+      description: t('landing.features.fast.desc'),
     },
   ];
 
@@ -43,11 +45,11 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            <span className="gradient-text">DailyQuest</span>
+            <span className="gradient-text">{t('landing.hero.title')}</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-neutral-600 mb-8">
-            매일의 목표를 달성하고 성취감을 느껴보세요
+            {t('landing.hero.subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -56,21 +58,21 @@ export default function HomePage() {
               size="lg"
               onClick={() => router.push('/signup')}
             >
-              무료로 시작하기
+              {t('landing.hero.cta')}
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => router.push('/login')}
             >
-              로그인
+              {t('landing.hero.login')}
             </Button>
           </div>
 
           {/* Screenshot Preview */}
           <div className="rounded-2xl overflow-hidden shadow-2xl border border-neutral-200 bg-white p-1">
             <div className="aspect-video bg-gradient-to-br from-primary-100 to-primary-50 rounded-xl flex items-center justify-center">
-              <p className="text-primary-600 font-medium">앱 스크린샷 미리보기</p>
+              <p className="text-primary-600 font-medium">{t('common.appName')}</p>
             </div>
           </div>
         </div>
@@ -79,9 +81,9 @@ export default function HomePage() {
       {/* Features Section */}
       <div className="container-custom py-20">
         <div className="text-center mb-12">
-          <h2 className="heading-2 mb-4">핵심 기능</h2>
+          <h2 className="heading-2 mb-4">{t('landing.features.title')}</h2>
           <p className="text-neutral-600">
-            DailyQuest의 강력한 기능을 경험해보세요
+            {t('landing.features.subtitle')}
           </p>
         </div>
 
@@ -96,7 +98,6 @@ export default function HomePage() {
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-primary-600" />
                 </div>
-                {/* 🔥 제목 색상 진하게 수정 */}
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                   {feature.title}
                 </h3>
@@ -113,17 +114,17 @@ export default function HomePage() {
       <div className="container-custom py-20">
         <div className="bg-gradient-primary rounded-3xl p-12 text-center text-white shadow-xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            지금 바로 시작하세요
+            {t('landing.cta.title')}
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            무료로 DailyQuest를 사용하고 매일의 목표를 달성하세요
+            {t('landing.cta.subtitle')}
           </p>
           <Button
             variant="secondary"
             size="lg"
             onClick={() => router.push('/signup')}
           >
-            무료 회원가입
+            {t('landing.cta.button')}
           </Button>
         </div>
       </div>
@@ -131,7 +132,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-neutral-200 py-8">
         <div className="container-custom text-center text-neutral-600">
-          <p>© 2026 DailyQuest. All rights reserved.</p>
+          <p>{t('landing.footer.copyright')}</p>
         </div>
       </footer>
     </div>

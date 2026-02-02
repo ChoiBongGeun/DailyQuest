@@ -1,11 +1,10 @@
-import { apiClient } from '../api-client';
+import axiosInstance from '../api-client';
 import type { DashboardStats } from '@/types';
+import { unwrapApiResponse } from './response';
 
 export const dashboardApi = {
-  /**
-   * 대시보드 통계 조회
-   */
   getStats: async (): Promise<DashboardStats> => {
-    return apiClient.get('/api/dashboard/stats');
+    const response = await axiosInstance.get('/api/dashboard/stats');
+    return unwrapApiResponse<DashboardStats>(response);
   },
 };

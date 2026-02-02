@@ -5,7 +5,7 @@ export interface User {
   id: number;
   email: string;
   nickname: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface LoginRequest {
@@ -32,8 +32,9 @@ export type RecurrenceType = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
 export interface Task {
   id: number;
-  userId: number;
   projectId?: number;
+  projectName?: string;
+  projectColor?: string;
   title: string;
   description?: string;
   priority: Priority;
@@ -45,9 +46,8 @@ export interface Task {
   recurrenceInterval?: number;
   recurrenceEndDate?: string;
   parentTaskId?: number;
-  project?: Project;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TaskCreateRequest {
@@ -76,10 +76,10 @@ export interface TaskUpdateRequest {
 // ========================================
 export interface Project {
   id: number;
-  userId: number;
   name: string;
   color: string;
   taskCount?: number;
+  completedTaskCount?: number;
   createdAt: string;
 }
 
@@ -103,7 +103,9 @@ export interface DashboardStats {
   overdueTasks: number;
   completionRate: number;
   todayTasks: number;
-  thisWeekTasks: number;
+  weekTasks: number;
+  todayCompleted: number;
+  weekCompleted: number;
 }
 
 // ========================================

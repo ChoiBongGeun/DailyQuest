@@ -27,4 +27,12 @@ public class DashboardController {
         DashboardDto.Response response = dashboardService.getDashboard(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @Operation(summary = "Get dashboard stats", description = "Get user's task statistics")
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<DashboardDto.Response>> getStats() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        DashboardDto.Response response = dashboardService.getDashboard(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

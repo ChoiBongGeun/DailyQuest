@@ -2,6 +2,7 @@ package com.dailyquest.backend.service;
 
 import com.dailyquest.backend.domain.*;
 import com.dailyquest.backend.dto.TaskDto;
+import com.dailyquest.backend.exception.BusinessException;
 import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,9 @@ public class TaskService {
         if (request.getProjectId() != null) {
             project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
+            if (!project.getUser().getId().equals(userId)) {
+                throw new BusinessException(ErrorCode.NO_PERMISSION);
+            }
         }
 
         Task task = Task.builder()
@@ -55,9 +59,8 @@ public class TaskService {
         return TaskDto.Response.from(savedTask);
     }
 
-    public TaskDto.Response getTask(Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+    public TaskDto.Response getTask(Long userId, Long taskId) {
+        Task task = getOwnedTask(userId, taskId);
         return TaskDto.Response.from(task);
     }
 
@@ -101,8 +104,22 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    public List<TaskDto.ListResponse> getTasksByProject(Long projectId) {
-        return taskRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
+    public List<TaskDto.ListResponse> getTasksByProject(Long userId, Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        return taskRepository.findByProjectIdAndUserIdOrderByCreatedAtDesc(projectId, userId)
+                .stream()
+                .map(TaskDto.ListResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    public List<TaskDto.ListResponse> getTasksByPriority(Long userId, Priority priority) {
+        return taskRepository.findByUserIdAndPriorityOrderByDueDateAsc(userId, priority)
                 .stream()
                 .map(TaskDto.ListResponse::from)
                 .collect(Collectors.toList());
@@ -117,9 +134,8 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskDto.Response updateTask(Long taskId, TaskDto.UpdateRequest request) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+    public TaskDto.Response updateTask(Long userId, Long taskId, TaskDto.UpdateRequest request) {
+        Task task = getOwnedTask(userId, taskId);
 
         if (request.getTitle() != null) {
             task.updateTitle(request.getTitle());
@@ -136,6 +152,9 @@ public class TaskService {
         if (request.getProjectId() != null) {
             Project project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
+            if (!project.getUser().getId().equals(userId)) {
+                throw new BusinessException(ErrorCode.NO_PERMISSION);
+            }
             task.changeProject(project);
         }
 
@@ -154,9 +173,8 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskDto.Response completeTask(Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+    public TaskDto.Response completeTask(Long userId, Long taskId) {
+        Task task = getOwnedTask(userId, taskId);
 
         task.complete();
         log.info("Task completed: id={}", taskId);
@@ -169,9 +187,8 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskDto.Response uncompleteTask(Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+    public TaskDto.Response uncompleteTask(Long userId, Long taskId) {
+        Task task = getOwnedTask(userId, taskId);
 
         task.uncomplete();
         log.info("Task uncompleted: id={}", taskId);
@@ -179,9 +196,8 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteTask(Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+    public void deleteTask(Long userId, Long taskId) {
+        Task task = getOwnedTask(userId, taskId);
 
         taskRepository.delete(task);
         log.info("Task deleted: id={}", taskId);
@@ -228,5 +244,16 @@ public class TaskService {
             case WEEKLY -> currentDue.plusWeeks(interval);
             case MONTHLY -> currentDue.plusMonths(interval);
         };
+    }
+
+    private Task getOwnedTask(Long userId, Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+
+        if (!task.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        return task;
     }
 }

@@ -1,42 +1,48 @@
-import { apiClient } from '../api-client';
+import axiosInstance from '../api-client';
 import type { LoginRequest, SignupRequest, AuthResponse, User } from '@/types';
+import { unwrapApiResponse } from './response';
+
+interface LoginApiResponse {
+  id: number;
+  email: string;
+  nickname: string;
+  accessToken: string;
+}
 
 export const authApi = {
-  /**
-   * 로그인
-   */
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    return apiClient.post('/api/users/login', data);
+    const response = await axiosInstance.post('/api/users/login', data);
+    const loginData = unwrapApiResponse<LoginApiResponse>(response);
+
+    return {
+      accessToken: loginData.accessToken,
+      user: {
+        id: loginData.id,
+        email: loginData.email,
+        nickname: loginData.nickname,
+      },
+    };
   },
 
-  /**
-   * 회원가입
-   */
-  signup: async (data: SignupRequest): Promise<AuthResponse> => {
-    return apiClient.post('/api/users/signup', data);
+  signup: async (data: SignupRequest): Promise<void> => {
+    const response = await axiosInstance.post('/api/users/signup', data);
+    unwrapApiResponse(response);
   },
 
-  /**
-   * 내 정보 조회
-   */
   getMe: async (): Promise<User> => {
-    return apiClient.get('/api/users/me');
+    const response = await axiosInstance.get('/api/users/me');
+    return unwrapApiResponse<User>(response);
   },
 
-  /**
-   * 비밀번호 변경
-   */
-  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    return apiClient.put('/api/users/password', {
-      currentPassword,
-      newPassword,
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+    const response = await axiosInstance.patch('/api/users/me/password', data);
+    unwrapApiResponse(response);
+  },
+
+  deleteAccount: async (password: string): Promise<void> => {
+    const response = await axiosInstance.delete('/api/users/me', {
+      params: { password },
     });
-  },
-
-  /**
-   * 회원 탈퇴
-   */
-  deleteAccount: async (): Promise<void> => {
-    return apiClient.delete('/api/users/me');
+    unwrapApiResponse(response);
   },
 };

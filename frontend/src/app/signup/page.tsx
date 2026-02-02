@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Mail, Lock, User } from 'lucide-react';
@@ -11,6 +12,7 @@ import { isValidEmail, isStrongPassword } from '@/lib/utils';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signup, isLoading } = useAuthStore();
   const [formData, setFormData] = React.useState({
     email: '',
@@ -24,19 +26,19 @@ export default function SignUpPage() {
     const newErrors: Record<string, string> = {};
 
     if (!isValidEmail(formData.email)) {
-      newErrors.email = '올바른 이메일 형식이 아닙니다.';
+      newErrors.email = t('auth.emailError');
     }
 
     if (!isStrongPassword(formData.password)) {
-      newErrors.password = '비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다.';
+      newErrors.password = t('auth.passwordError');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = '비밀번호가 일치하지 않습니다.';
+      newErrors.confirmPassword = t('auth.passwordMismatch');
     }
 
     if (formData.nickname.length < 2) {
-      newErrors.nickname = '닉네임은 2자 이상이어야 합니다.';
+      newErrors.nickname = t('auth.nicknameError');
     }
 
     setErrors(newErrors);
@@ -56,7 +58,7 @@ export default function SignUpPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      setErrors({ submit: error.message || '회원가입에 실패했습니다.' });
+      setErrors({ submit: error.message || t('auth.signupError') });
     }
   };
 
@@ -70,19 +72,19 @@ export default function SignUpPage() {
               <span className="text-white font-bold text-2xl">D</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold gradient-text mb-2">DailyQuest</h1>
-          <p className="text-neutral-600">새로운 계정을 만들어보세요</p>
+          <h1 className="text-3xl font-bold gradient-text mb-2">{t('common.appName')}</h1>
+          <p className="text-neutral-600">{t('auth.createAccount')}</p>
         </div>
 
         {/* SignUp Form */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-6">회원가입</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 mb-6">{t('auth.signupTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="이메일"
+              label={t('auth.email')}
               type="email"
-              placeholder="example@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               leftIcon={<Mail className="w-5 h-5" />}
@@ -92,35 +94,35 @@ export default function SignUpPage() {
             />
 
             <Input
-              label="닉네임"
+              label={t('auth.nickname')}
               type="text"
-              placeholder="홍길동"
+              placeholder={t('auth.nicknamePlaceholder')}
               value={formData.nickname}
               onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
               leftIcon={<User className="w-5 h-5" />}
               error={errors.nickname}
-              helperText="2자 이상 입력해주세요"
+              helperText={t('auth.nicknameHelp')}
               required
               fullWidth
             />
 
             <Input
-              label="비밀번호"
+              label={t('auth.password')}
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               leftIcon={<Lock className="w-5 h-5" />}
               error={errors.password}
-              helperText="8자 이상, 영문과 숫자 포함"
+              helperText={t('auth.passwordHelp')}
               required
               fullWidth
             />
 
             <Input
-              label="비밀번호 확인"
+              label={t('auth.passwordConfirm')}
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               leftIcon={<Lock className="w-5 h-5" />}
@@ -142,18 +144,18 @@ export default function SignUpPage() {
               fullWidth
               isLoading={isLoading}
             >
-              회원가입
+              {t('auth.signup')}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-neutral-600">
-              이미 계정이 있으신가요?{' '}
+              {t('auth.hasAccount')}{' '}
               <Link
                 href="/login"
                 className="text-primary-600 font-medium hover:text-primary-700 transition-colors"
               >
-                로그인
+                {t('auth.login')}
               </Link>
             </p>
           </div>
@@ -161,7 +163,7 @@ export default function SignUpPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-neutral-500 mt-8">
-          © 2026 DailyQuest. All rights reserved.
+          {t('landing.footer.copyright')}
         </p>
       </div>
     </div>

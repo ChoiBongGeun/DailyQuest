@@ -7,7 +7,7 @@ import type { Task } from '@/types';
 
 interface TaskItemProps {
   task: Task;
-  onToggle: (id: number) => void;
+  onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
 }
@@ -36,7 +36,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         <div className="pt-0.5">
           <Checkbox
             checked={task.isCompleted}
-            onChange={() => onToggle(task.id)}
+            onChange={() => onToggle(task)}
           />
         </div>
 
@@ -83,9 +83,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 )}
 
                 {/* Project */}
-                {task.project && (
+                {task.projectName && (
                   <Badge variant="default" size="sm">
-                    {task.project.name}
+                    {task.projectName}
                   </Badge>
                 )}
               </div>

@@ -72,4 +72,14 @@ public class ProjectDto {
                     .build();
         }
     }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StatsResponse {
+        private long totalTasks;
+        private long completedTasks;
+        private double completionRate;
+    }
 }

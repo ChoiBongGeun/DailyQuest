@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     
@@ -25,6 +26,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     );
     
     List<Task> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+
+    List<Task> findByProjectIdAndUserIdOrderByCreatedAtDesc(Long projectId, Long userId);
     
     List<Task> findByProjectIdAndIsCompleted(Long projectId, Boolean isCompleted);
     
@@ -40,6 +43,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findRecurringParentTasks(@Param("userId") Long userId);
     
     List<Task> findByParentTaskId(Long parentTaskId);
+
+    Optional<Task> findByIdAndUserId(Long id, Long userId);
     
     long countByUserId(Long userId);
     

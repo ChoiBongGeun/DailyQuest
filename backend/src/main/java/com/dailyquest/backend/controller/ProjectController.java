@@ -40,7 +40,8 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectDto.Response>> getProject(
             @Parameter(description = "Project ID") @PathVariable Long projectId) {
-        ProjectDto.Response response = projectService.getProject(projectId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        ProjectDto.Response response = projectService.getProject(userId, projectId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -52,12 +53,22 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @Operation(summary = "Get project stats", description = "Get project task statistics")
+    @GetMapping("/{projectId}/stats")
+    public ResponseEntity<ApiResponse<ProjectDto.StatsResponse>> getProjectStats(
+            @Parameter(description = "Project ID") @PathVariable Long projectId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        ProjectDto.StatsResponse response = projectService.getProjectStats(userId, projectId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @Operation(summary = "Update project", description = "Update project information")
     @PutMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectDto.Response>> updateProject(
             @Parameter(description = "Project ID") @PathVariable Long projectId,
             @Valid @RequestBody ProjectDto.UpdateRequest request) {
-        ProjectDto.Response response = projectService.updateProject(projectId, request);
+        Long userId = SecurityUtil.getCurrentUserId();
+        ProjectDto.Response response = projectService.updateProject(userId, projectId, request);
         return ResponseEntity.ok(ApiResponse.success("Project updated successfully", response));
     }
 
@@ -65,7 +76,8 @@ public class ProjectController {
     @DeleteMapping("/{projectId}")
     public ResponseEntity<ApiResponse<Void>> deleteProject(
             @Parameter(description = "Project ID") @PathVariable Long projectId) {
-        projectService.deleteProject(projectId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        projectService.deleteProject(userId, projectId);
         return ResponseEntity.ok(ApiResponse.success("Project deleted successfully"));
     }
 }

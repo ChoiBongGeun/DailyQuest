@@ -2,6 +2,7 @@ package com.dailyquest.backend.controller;
 
 import com.dailyquest.backend.dto.ApiResponse;
 import com.dailyquest.backend.dto.TaskDto;
+import com.dailyquest.backend.domain.Priority;
 import com.dailyquest.backend.service.TaskService;
 import com.dailyquest.backend.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +41,8 @@ public class TaskController {
     @GetMapping("/{taskId}")
     public ResponseEntity<ApiResponse<TaskDto.Response>> getTask(
             @Parameter(description = "Task ID") @PathVariable Long taskId) {
-        TaskDto.Response response = taskService.getTask(taskId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        TaskDto.Response response = taskService.getTask(userId, taskId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -88,7 +90,17 @@ public class TaskController {
     @GetMapping("/project/{projectId}")
     public ResponseEntity<ApiResponse<List<TaskDto.ListResponse>>> getTasksByProject(
             @Parameter(description = "Project ID") @PathVariable Long projectId) {
-        List<TaskDto.ListResponse> response = taskService.getTasksByProject(projectId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        List<TaskDto.ListResponse> response = taskService.getTasksByProject(userId, projectId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Get tasks by priority", description = "Get tasks by priority for current user")
+    @GetMapping("/priority/{priority}")
+    public ResponseEntity<ApiResponse<List<TaskDto.ListResponse>>> getTasksByPriority(
+            @Parameter(description = "Priority") @PathVariable Priority priority) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        List<TaskDto.ListResponse> response = taskService.getTasksByPriority(userId, priority);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -105,7 +117,8 @@ public class TaskController {
     public ResponseEntity<ApiResponse<TaskDto.Response>> updateTask(
             @Parameter(description = "Task ID") @PathVariable Long taskId,
             @Valid @RequestBody TaskDto.UpdateRequest request) {
-        TaskDto.Response response = taskService.updateTask(taskId, request);
+        Long userId = SecurityUtil.getCurrentUserId();
+        TaskDto.Response response = taskService.updateTask(userId, taskId, request);
         return ResponseEntity.ok(ApiResponse.success("Task updated successfully", response));
     }
 
@@ -113,7 +126,8 @@ public class TaskController {
     @PatchMapping("/{taskId}/complete")
     public ResponseEntity<ApiResponse<TaskDto.Response>> completeTask(
             @Parameter(description = "Task ID") @PathVariable Long taskId) {
-        TaskDto.Response response = taskService.completeTask(taskId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        TaskDto.Response response = taskService.completeTask(userId, taskId);
         return ResponseEntity.ok(ApiResponse.success("Task completed", response));
     }
 
@@ -121,7 +135,8 @@ public class TaskController {
     @PatchMapping("/{taskId}/uncomplete")
     public ResponseEntity<ApiResponse<TaskDto.Response>> uncompleteTask(
             @Parameter(description = "Task ID") @PathVariable Long taskId) {
-        TaskDto.Response response = taskService.uncompleteTask(taskId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        TaskDto.Response response = taskService.uncompleteTask(userId, taskId);
         return ResponseEntity.ok(ApiResponse.success("Task marked as incomplete", response));
     }
 
@@ -129,7 +144,8 @@ public class TaskController {
     @DeleteMapping("/{taskId}")
     public ResponseEntity<ApiResponse<Void>> deleteTask(
             @Parameter(description = "Task ID") @PathVariable Long taskId) {
-        taskService.deleteTask(taskId);
+        Long userId = SecurityUtil.getCurrentUserId();
+        taskService.deleteTask(userId, taskId);
         return ResponseEntity.ok(ApiResponse.success("Task deleted successfully"));
     }
 }

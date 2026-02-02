@@ -8,7 +8,6 @@ import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Mail, Lock } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
-import '@/lib/i18n';
 
 export default function LoginPage() {
   const router = useRouter();

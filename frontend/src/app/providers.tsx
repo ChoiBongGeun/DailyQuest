@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import '@/lib/i18n';
 
 const queryClient = new QueryClient({
   defaultOptions: {
