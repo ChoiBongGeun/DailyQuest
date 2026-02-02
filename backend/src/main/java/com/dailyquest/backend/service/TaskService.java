@@ -40,6 +40,8 @@ public class TaskService {
             }
         }
 
+        validateRecurringConfiguration(request.getIsRecurring(), request.getRecurrenceType());
+
         Task task = Task.builder()
                 .user(user)
                 .project(project)
@@ -159,6 +161,7 @@ public class TaskService {
         }
 
         if (Boolean.TRUE.equals(request.getIsRecurring())) {
+            validateRecurringConfiguration(true, request.getRecurrenceType());
             task.setRecurring(
                     request.getRecurrenceType(),
                     request.getRecurrenceInterval() != null ? request.getRecurrenceInterval() : 1,
@@ -236,6 +239,13 @@ public class TaskService {
     }
 
     private LocalDate calculateNextDueDate(Task task) {
+        if (task.getRecurrenceType() == null) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "recurrenceType is required for recurring tasks"
+            );
+        }
+
         LocalDate currentDue = task.getDueDate();
         int interval = task.getRecurrenceInterval();
 
@@ -244,6 +254,15 @@ public class TaskService {
             case WEEKLY -> currentDue.plusWeeks(interval);
             case MONTHLY -> currentDue.plusMonths(interval);
         };
+    }
+
+    private void validateRecurringConfiguration(Boolean isRecurring, RecurrenceType recurrenceType) {
+        if (Boolean.TRUE.equals(isRecurring) && recurrenceType == null) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "recurrenceType is required when isRecurring is true"
+            );
+        }
     }
 
     private Task getOwnedTask(Long userId, Long taskId) {

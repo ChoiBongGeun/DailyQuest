@@ -3,6 +3,7 @@ package com.dailyquest.backend.dto;
 import com.dailyquest.backend.domain.Priority;
 import com.dailyquest.backend.domain.RecurrenceType;
 import com.dailyquest.backend.domain.Task;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -35,6 +36,11 @@ public class TaskDto {
         private RecurrenceType recurrenceType;
         private Integer recurrenceInterval;
         private LocalDate recurrenceEndDate;
+
+        @AssertTrue(message = "recurrenceType is required when isRecurring is true")
+        public boolean isRecurringConfigurationValid() {
+            return !Boolean.TRUE.equals(isRecurring) || recurrenceType != null;
+        }
     }
 
     @Getter
@@ -59,6 +65,11 @@ public class TaskDto {
         private RecurrenceType recurrenceType;
         private Integer recurrenceInterval;
         private LocalDate recurrenceEndDate;
+
+        @AssertTrue(message = "recurrenceType is required when isRecurring is true")
+        public boolean isRecurringConfigurationValid() {
+            return !Boolean.TRUE.equals(isRecurring) || recurrenceType != null;
+        }
     }
 
     @Getter
