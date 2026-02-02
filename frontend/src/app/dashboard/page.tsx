@@ -7,6 +7,7 @@ import { Sidebar, type DashboardView } from '@/components/organisms/Sidebar';
 import { StatsCard } from '@/components/molecules/StatsCard';
 import { TaskItem } from '@/components/molecules/TaskItem';
 import { TaskModal } from '@/components/organisms/TaskModal';
+import { ProjectModal } from '@/components/organisms/ProjectModal';
 import { Card } from '@/components/atoms/Card';
 import { Button } from '@/components/atoms/Button';
 import {
@@ -22,6 +23,8 @@ import { useProjects } from '@/hooks/use-projects';
 import { extractErrorMessage } from '@/lib/api/response';
 import type { Task } from '@/types';
 import { useTranslation } from 'react-i18next';
+import { useUIStore } from '@/stores/ui-store';
+import { cn } from '@/lib/utils';
 
 type TaskQueryResult = {
   data: Task[] | undefined;
@@ -34,6 +37,8 @@ export default function Page() {
   const [currentView, setCurrentView] = React.useState<DashboardView>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = React.useState<number>();
   const [showTaskModal, setShowTaskModal] = React.useState(false);
+  const [showProjectModal, setShowProjectModal] = React.useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
@@ -46,6 +51,7 @@ export default function Page() {
 
   const setTaskComplete = useSetTaskComplete();
   const deleteTask = useDeleteTask();
+  const addToast = useUIStore((state) => state.addToast);
 
   const activeTaskQuery: TaskQueryResult = React.useMemo(() => {
     if (currentView === 'all' || currentView === 'dashboard') return allTasksQuery;
@@ -62,7 +68,7 @@ export default function Page() {
         isCompleted: !task.isCompleted,
       });
     } catch (error) {
-      alert(extractErrorMessage(error, '할 일 상태 변경에 실패했습니다.'));
+      addToast(extractErrorMessage(error, t('error.generic')), 'error');
     }
   };
 
@@ -71,8 +77,9 @@ export default function Page() {
 
     try {
       await deleteTask.mutateAsync(id);
+      addToast(t('success.taskDeleted'), 'success');
     } catch (error) {
-      alert(extractErrorMessage(error, '할 일 삭제에 실패했습니다.'));
+      addToast(extractErrorMessage(error, t('error.generic')), 'error');
     }
   };
 
@@ -112,19 +119,56 @@ export default function Page() {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
       <Header />
       <div className="flex">
-        <Sidebar
-          currentView={currentView}
-          selectedProjectId={selectedProjectId}
-          projects={projects}
-          onViewChange={setCurrentView}
-          onSelectProject={handleSelectProject}
-          onNewTask={openCreateModal}
+        <div
+          className={cn(
+            'fixed inset-0 bg-black/40 z-30 lg:hidden transition-opacity',
+            isMobileSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}
+          onClick={() => setIsMobileSidebarOpen(false)}
         />
+        <div
+          className={cn(
+            'fixed left-0 top-16 bottom-0 z-40 lg:hidden transition-transform',
+            isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          <Sidebar
+            currentView={currentView}
+            selectedProjectId={selectedProjectId}
+            projects={projects}
+            onViewChange={setCurrentView}
+            onSelectProject={handleSelectProject}
+            onNewTask={openCreateModal}
+            onNewProject={() => setShowProjectModal(true)}
+            isMobile
+            onNavigate={() => setIsMobileSidebarOpen(false)}
+          />
+        </div>
 
-        <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-4rem)]">
+        <div className="hidden lg:block">
+          <Sidebar
+            currentView={currentView}
+            selectedProjectId={selectedProjectId}
+            projects={projects}
+            onViewChange={setCurrentView}
+            onSelectProject={handleSelectProject}
+            onNewTask={openCreateModal}
+            onNewProject={() => setShowProjectModal(true)}
+          />
+        </div>
+
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto h-[calc(100vh-4rem)]">
           <div className="container-custom max-w-7xl">
             <div className="mb-8">
-              <h1 className="heading-2 text-neutral-900 dark:text-neutral-100 mb-2">{t('dashboard.title')}</h1>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h1 className="heading-2 text-neutral-900 dark:text-neutral-100">{t('dashboard.title')}</h1>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="lg:hidden px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  메뉴
+                </button>
+              </div>
               <p className="text-neutral-600 dark:text-neutral-400">{t('dashboard.welcome')} 🚀</p>
             </div>
 
@@ -148,9 +192,9 @@ export default function Page() {
             ) : null}
 
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h2 className="heading-3 text-neutral-900 dark:text-neutral-100">{getTaskTitle()}</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <Button variant="outline" size="sm" leftIcon={<Filter className="w-4 h-4" />} disabled>
                     {t('common.filter')}
                   </Button>
@@ -244,6 +288,11 @@ export default function Page() {
           setEditingTask(null);
         }}
         editingTask={editingTask}
+      />
+      <ProjectModal
+        isOpen={showProjectModal}
+        onClose={() => setShowProjectModal(false)}
+        onCreated={() => setCurrentView('projects')}
       />
     </div>
   );

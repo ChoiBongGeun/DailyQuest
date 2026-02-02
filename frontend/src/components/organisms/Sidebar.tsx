@@ -16,6 +16,9 @@ interface SidebarProps {
   onViewChange: (view: DashboardView) => void;
   onSelectProject: (projectId: number) => void;
   onNewTask: () => void;
+  onNewProject: () => void;
+  isMobile?: boolean;
+  onNavigate?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -25,6 +28,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onViewChange,
   onSelectProject,
   onNewTask,
+  onNewProject,
+  isMobile = false,
+  onNavigate,
 }) => {
   const { t } = useTranslation();
   const menuItems: Array<{ id: DashboardView; label: string; icon: React.ElementType }> = [
@@ -34,8 +40,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'all', label: t('nav.all'), icon: FolderKanban },
   ];
 
+  const handleNavigate = () => {
+    onNavigate?.();
+  };
+
   return (
-    <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-colors">
+    <aside
+      className={cn(
+        'bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto transition-colors',
+        isMobile ? 'w-72 h-full' : 'w-64 h-[calc(100vh-4rem)] sticky top-16'
+      )}
+    >
       <div className="p-4 space-y-4">
         <Button variant="primary" fullWidth leftIcon={<Plus className="w-4 h-4" />} onClick={onNewTask}>
           {t('task.newTask')}
@@ -49,7 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => onViewChange(item.id)}
+                onClick={() => {
+                  onViewChange(item.id);
+                  handleNavigate();
+                }}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium',
                   isActive
@@ -69,13 +87,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               {t('nav.projects')}
             </h3>
+            <button
+              onClick={() => {
+                onNewProject();
+                handleNavigate();
+              }}
+              className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title={t('project.newProject')}
+            >
+              <Plus className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+            </button>
           </div>
 
           <div className="space-y-1">
             {projects.map((project) => (
               <button
                 key={project.id}
-                onClick={() => onSelectProject(project.id)}
+                onClick={() => {
+                  onSelectProject(project.id);
+                  handleNavigate();
+                }}
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm',
                   selectedProjectId === project.id
@@ -91,9 +122,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             ))}
             {projects.length === 0 && (
-              <p className="px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400">
-                {t('project.noProjects')}
-              </p>
+              <div className="px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400 space-y-2">
+                <p>{t('project.noProjects')}</p>
+                <button
+                  onClick={() => {
+                    onNewProject();
+                    handleNavigate();
+                  }}
+                  className="text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  {t('project.addProject')}
+                </button>
+              </div>
             )}
           </div>
         </div>

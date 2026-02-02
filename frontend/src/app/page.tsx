@@ -35,28 +35,29 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
       {/* Hero Section */}
-      <div className="container-custom py-20">
+      <div className="container-custom py-12 sm:py-16 lg:py-20">
         <div className="text-center max-w-4xl mx-auto">
           {/* Logo */}
-          <div className="inline-flex items-center gap-3 mb-6">
-            <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-xl">
-              <span className="text-white font-bold text-3xl">D</span>
+          <div className="inline-flex items-center gap-3 mb-5 sm:mb-6">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-700 to-primary-900 rounded-2xl flex items-center justify-center shadow-xl ring-2 ring-primary-200">
+              <span className="text-white font-bold text-2xl sm:text-3xl drop-shadow-sm">D</span>
             </div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6">
             <span className="gradient-text">{t('landing.hero.title')}</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-neutral-600 mb-8">
+          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 mb-7 sm:mb-8">
             {t('landing.hero.subtitle')}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-14 lg:mb-16">
             <Button
               variant="primary"
               size="lg"
               onClick={() => router.push('/signup')}
+              className="w-full sm:w-auto"
             >
               {t('landing.hero.cta')}
             </Button>
@@ -64,6 +65,7 @@ export default function HomePage() {
               variant="outline"
               size="lg"
               onClick={() => router.push('/login')}
+              className="w-full sm:w-auto"
             >
               {t('landing.hero.login')}
             </Button>
@@ -79,8 +81,8 @@ export default function HomePage() {
       </div>
 
       {/* Features Section */}
-      <div className="container-custom py-20">
-        <div className="text-center mb-12">
+      <div className="container-custom py-12 sm:py-16 lg:py-20">
+        <div className="text-center mb-10 sm:mb-12">
           <h2 className="heading-2 mb-4">{t('landing.features.title')}</h2>
           <p className="text-neutral-600">
             {t('landing.features.subtitle')}
@@ -111,12 +113,12 @@ export default function HomePage() {
       </div>
 
       {/* CTA Section */}
-      <div className="container-custom py-20">
-        <div className="bg-gradient-primary rounded-3xl p-12 text-center text-white shadow-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      <div className="container-custom py-12 sm:py-16 lg:py-20">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-6 sm:p-10 lg:p-12 text-center text-white shadow-xl">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 drop-shadow-sm">
             {t('landing.cta.title')}
           </h2>
-          <p className="text-xl mb-8 opacity-90">
+          <p className="text-base sm:text-lg md:text-xl mb-7 sm:mb-8 text-primary-50">
             {t('landing.cta.subtitle')}
           </p>
           <Button

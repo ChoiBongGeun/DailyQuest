@@ -63,7 +63,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -77,8 +77,8 @@ export default function SignUpPage() {
         </div>
 
         {/* SignUp Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-6">{t('auth.signupTitle')}</h2>
+        <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-5 sm:mb-6">{t('auth.signupTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input

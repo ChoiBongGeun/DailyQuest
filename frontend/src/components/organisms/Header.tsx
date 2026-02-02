@@ -34,16 +34,16 @@ export const Header: React.FC = () => {
               {/* Dark Mode Toggle */}
               <DarkModeToggle />
 
-              {/* Notifications */}
-              <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors relative">
-                <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-              </button>
+            {/* Notifications */}
+            <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors relative">
+              <Bell className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
+            </button>
 
-              {/* Settings */}
-              <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-                <Settings className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-              </button>
+            {/* Settings */}
+            <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <Settings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+            </button>
 
               {/* User Menu */}
               <div className="flex items-center gap-3 ml-2 pl-2 border-l border-neutral-200 dark:border-neutral-800">

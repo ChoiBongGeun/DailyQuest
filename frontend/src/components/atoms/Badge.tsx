@@ -15,11 +15,11 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
 }) => {
   const variants = {
-    default: 'bg-neutral-100 text-neutral-700',
-    primary: 'bg-primary-100 text-primary-700',
-    success: 'bg-success-light text-success-dark',
-    warning: 'bg-warning-light text-warning-dark',
-    danger: 'bg-error-light text-error-dark',
+    default: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200',
+    primary: 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300',
+    success: 'bg-success-light dark:bg-success/20 text-success-dark dark:text-success',
+    warning: 'bg-warning-light dark:bg-warning/20 text-warning-dark dark:text-warning',
+    danger: 'bg-error-light dark:bg-error/20 text-error-dark dark:text-error',
   };
 
   const sizes = {
