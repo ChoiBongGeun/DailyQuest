@@ -3,7 +3,9 @@ package com.dailyquest.backend.service;
 import com.dailyquest.backend.domain.User;
 import com.dailyquest.backend.domain.UserRepository;
 import com.dailyquest.backend.dto.UserDto;
+import com.dailyquest.backend.exception.BusinessException;
 import com.dailyquest.backend.exception.DuplicateException;
+import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -149,5 +152,33 @@ class UserServiceTest {
 
         // then
         assertThat(testUser.getNickname()).isEqualTo("newNickname");
+    }
+
+    @Test
+    @DisplayName("Change password fails when current/new password is null")
+    void changePassword_NullPassword() {
+        // given
+        given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+
+        // when & then
+        assertThatThrownBy(() -> userService.changePassword(1L, null, null))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Change password fails when current/new password is blank")
+    void changePassword_BlankPassword() {
+        // given
+        given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+
+        // when & then
+        assertThatThrownBy(() -> userService.changePassword(1L, " ", " "))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 }

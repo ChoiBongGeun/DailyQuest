@@ -86,6 +86,24 @@ class TaskServiceTest {
     }
 
     @Test
+    @DisplayName("Create recurring task fails when recurrenceType is missing")
+    void createTask_RecurringWithoutRecurrenceType() {
+        // given
+        TaskDto.CreateRequest request = TaskDto.CreateRequest.builder()
+                .title("Recurring Task")
+                .isRecurring(true)
+                .build();
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+
+        // when & then
+        assertThatThrownBy(() -> taskService.createTask(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
     @DisplayName("Create task fails when user not found")
     void createTask_UserNotFound() {
         // given
@@ -175,6 +193,30 @@ class TaskServiceTest {
         assertThat(recurringTask.getIsCompleted()).isTrue();
         // verify next task is created
         verify(taskRepository).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("Complete recurring task fails when recurrenceType is missing")
+    void completeRecurringTask_WithoutRecurrenceType() {
+        // given
+        Task recurringTask = Task.builder()
+                .id(1L)
+                .user(testUser)
+                .title("Broken Recurring Task")
+                .dueDate(LocalDate.now())
+                .isCompleted(false)
+                .isRecurring(true)
+                .recurrenceType(null)
+                .recurrenceInterval(1)
+                .build();
+
+        given(taskRepository.findById(1L)).willReturn(Optional.of(recurringTask));
+
+        // when & then
+        assertThatThrownBy(() -> taskService.completeTask(1L, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
     }
 
     @Test
