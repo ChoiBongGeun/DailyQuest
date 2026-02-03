@@ -39,6 +39,7 @@ export interface Task {
   description?: string;
   priority: Priority;
   dueDate?: string;
+  dueTime?: string;
   isCompleted: boolean;
   completedAt?: string;
   isRecurring: boolean;
@@ -56,6 +57,7 @@ export interface TaskCreateRequest {
   description?: string;
   priority: Priority;
   dueDate?: string;
+  dueTime?: string;
   isRecurring?: boolean;
   recurrenceType?: RecurrenceType;
   recurrenceInterval?: number;
@@ -68,6 +70,7 @@ export interface TaskUpdateRequest {
   description?: string;
   priority?: Priority;
   dueDate?: string;
+  dueTime?: string;
   isCompleted?: boolean;
 }
 

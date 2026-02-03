@@ -30,6 +30,20 @@ interface UIState {
   // Theme
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+
+  // Language
+  language: 'ko' | 'en';
+  setLanguage: (lang: 'ko' | 'en') => void;
+
+  // Reminder settings (minutes before due time)
+  reminderOffsets: number[];
+  setReminderOffsets: (offsets: number[]) => void;
+  addReminderOffset: (offset: number) => void;
+  removeReminderOffset: (offset: number) => void;
+
+  // Browser notification permission
+  notificationPermission: NotificationPermission | 'default';
+  setNotificationPermission: (permission: NotificationPermission) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -79,11 +93,35 @@ export const useUIStore = create<UIState>()(
         set((state) => ({
           theme: state.theme === 'light' ? 'dark' : 'light',
         })),
+
+      // Language
+      language: 'ko',
+      setLanguage: (lang) => set({ language: lang }),
+
+      // Reminder settings (default: 60 min, 10 min before)
+      reminderOffsets: [60, 10],
+      setReminderOffsets: (offsets) => set({ reminderOffsets: offsets }),
+      addReminderOffset: (offset) =>
+        set((state) => ({
+          reminderOffsets: [...new Set([...state.reminderOffsets, offset])].sort((a, b) => b - a),
+        })),
+      removeReminderOffset: (offset) =>
+        set((state) => ({
+          reminderOffsets: state.reminderOffsets.filter((o) => o !== offset),
+        })),
+
+      // Browser notification permission
+      notificationPermission: 'default',
+      setNotificationPermission: (permission) => set({ notificationPermission: permission }),
     }),
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ theme: state.theme }),
+      partialize: (state) => ({
+        theme: state.theme,
+        language: state.language,
+        reminderOffsets: state.reminderOffsets,
+      }),
     }
   )
 );

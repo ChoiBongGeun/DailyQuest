@@ -20,6 +20,7 @@ import {
 } from '@/hooks/use-tasks';
 import { useDashboardStats } from '@/hooks/use-dashboard';
 import { useProjects } from '@/hooks/use-projects';
+import { useTaskReminder } from '@/hooks/use-task-reminder';
 import { extractErrorMessage } from '@/lib/api/response';
 import type { Task } from '@/types';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,9 @@ export default function Page() {
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
   const { data: projects } = useProjects();
+
+  // Initialize task reminder scheduler
+  useTaskReminder();
 
   const allTasksQuery = useTasks();
   const todayTasksQuery = useTodayTasks();

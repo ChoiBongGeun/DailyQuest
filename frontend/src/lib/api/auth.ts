@@ -39,6 +39,11 @@ export const authApi = {
     unwrapApiResponse(response);
   },
 
+  updateNickname: async (nickname: string): Promise<User> => {
+    const response = await axiosInstance.patch(`/api/users/me/nickname?nickname=${encodeURIComponent(nickname)}`);
+    return unwrapApiResponse<User>(response);
+  },
+
   deleteAccount: async (password: string): Promise<void> => {
     const response = await axiosInstance.delete('/api/users/me', {
       data: { password },

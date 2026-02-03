@@ -23,6 +23,7 @@ interface TaskFormData {
   description?: string;
   priority: Priority;
   dueDate?: string;
+  dueTime?: string;
   projectId?: number;
 }
 
@@ -31,6 +32,7 @@ const EMPTY_FORM: TaskFormData = {
   description: '',
   priority: 'MEDIUM',
   dueDate: '',
+  dueTime: '',
   projectId: undefined,
 };
 
@@ -60,6 +62,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
       description: editingTask.description || '',
       priority: editingTask.priority,
       dueDate: editingTask.dueDate || '',
+      dueTime: editingTask.dueTime || '',
       projectId: editingTask.projectId,
     });
   }, [editingTask]);
@@ -90,6 +93,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
       description: formData.description || undefined,
       priority: formData.priority,
       dueDate: formData.dueDate || undefined,
+      dueTime: formData.dueTime || undefined,
       projectId: formData.projectId,
     };
 
@@ -267,13 +271,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
               </div>
             </div>
 
-            <Input
-              label={t('task.dueDate')}
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData((prev) => ({ ...prev, dueDate: e.target.value }))}
-              fullWidth
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label={t('task.dueDate')}
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData((prev) => ({ ...prev, dueDate: e.target.value }))}
+                fullWidth
+              />
+              <Input
+                label={t('task.dueTime')}
+                type="time"
+                value={formData.dueTime}
+                onChange={(e) => setFormData((prev) => ({ ...prev, dueTime: e.target.value }))}
+                fullWidth
+              />
+            </div>
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
               <Button type="button" variant="outline" fullWidth onClick={onClose}>
