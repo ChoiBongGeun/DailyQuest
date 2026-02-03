@@ -57,7 +57,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onC
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         <div className="w-full max-w-md max-h-[92vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">프로젝트 추가</h2>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{t('project.addProject')}</h2>
             <button
               onClick={handleClose}
               className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
@@ -68,8 +68,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onC
 
           <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto max-h-[calc(92vh-76px)]">
             <Input
-              label="프로젝트 이름"
-              placeholder="예: 개인, 업무"
+              label={t('project.projectName')}
+              placeholder={`${t('common.optional')}: ${t('project.personal')}, ${t('project.work')}`}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -77,7 +77,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onC
             />
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">색상</p>
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('project.projectColor')}</p>
               <div className="flex flex-wrap gap-2">
                 {DEFAULT_COLORS.map((c) => (
                   <button
@@ -98,10 +98,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onC
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
               <Button type="button" variant="outline" fullWidth onClick={handleClose}>
-                취소
+                {t('common.cancel')}
               </Button>
               <Button type="submit" variant="primary" fullWidth isLoading={createProject.isPending}>
-                생성
+                {t('common.submit')}
               </Button>
             </div>
           </form>
