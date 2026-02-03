@@ -53,6 +53,11 @@ public class Task {
     @Column(name = "due_time")
     private LocalTime dueTime;
 
+    // 개별 알림 설정 (분 단위, 콤마 구분 문자열로 저장. 예: "60,30,10")
+    // null이면 사용자 기본 설정 사용
+    @Column(name = "reminder_offsets")
+    private String reminderOffsets;
+
     @Column(name = "is_completed")
     @Builder.Default
     private Boolean isCompleted = false;
@@ -112,6 +117,10 @@ public class Task {
 
     public void updateDueTime(LocalTime dueTime) {
         this.dueTime = dueTime;
+    }
+
+    public void updateReminderOffsets(String reminderOffsets) {
+        this.reminderOffsets = reminderOffsets;
     }
 
     public void complete() {

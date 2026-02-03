@@ -52,6 +52,7 @@ public class TaskService {
                 .priority(request.getPriority() != null ? request.getPriority() : Priority.MEDIUM)
                 .dueDate(request.getDueDate())
                 .dueTime(request.getDueTime())
+                .reminderOffsets(formatReminderOffsets(request.getReminderOffsets()))
                 .isRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false)
                 .recurrenceType(request.getRecurrenceType())
                 .recurrenceInterval(request.getRecurrenceInterval() != null ? request.getRecurrenceInterval() : 1)
@@ -158,6 +159,13 @@ public class TaskService {
             validateDueTime(task.getDueDate(), request.getDueTime());
             task.updateDueTime(request.getDueTime());
         }
+        if (request.getReminderOffsets() != null) {
+            // 빈 배열이면 null로 설정 (기본 설정 사용)
+            String offsets = request.getReminderOffsets().isEmpty()
+                    ? null
+                    : formatReminderOffsets(request.getReminderOffsets());
+            task.updateReminderOffsets(offsets);
+        }
         if (request.getProjectId() != null) {
             Project project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
@@ -240,6 +248,7 @@ public class TaskService {
                 .priority(completedTask.getPriority())
                 .dueDate(nextDueDate)
                 .dueTime(completedTask.getDueTime())
+                .reminderOffsets(completedTask.getReminderOffsets())
                 .isRecurring(true)
                 .recurrenceType(completedTask.getRecurrenceType())
                 .recurrenceInterval(completedTask.getRecurrenceInterval())
@@ -295,6 +304,15 @@ public class TaskService {
                     "dueDate is required when dueTime is set"
             );
         }
+    }
+
+    private String formatReminderOffsets(java.util.List<Integer> offsets) {
+        if (offsets == null || offsets.isEmpty()) {
+            return null;
+        }
+        return offsets.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
     }
 
     private Task getOwnedTask(Long userId, Long taskId) {

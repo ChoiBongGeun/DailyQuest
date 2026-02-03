@@ -40,6 +40,7 @@ export interface Task {
   priority: Priority;
   dueDate?: string;
   dueTime?: string;
+  reminderOffsets?: number[] | null; // null이면 사용자 기본 설정 사용
   isCompleted: boolean;
   completedAt?: string;
   isRecurring: boolean;
@@ -58,6 +59,7 @@ export interface TaskCreateRequest {
   priority: Priority;
   dueDate?: string;
   dueTime?: string;
+  reminderOffsets?: number[] | null; // null이면 사용자 기본 설정 사용
   isRecurring?: boolean;
   recurrenceType?: RecurrenceType;
   recurrenceInterval?: number;
@@ -71,6 +73,7 @@ export interface TaskUpdateRequest {
   priority?: Priority;
   dueDate?: string;
   dueTime?: string;
+  reminderOffsets?: number[] | null; // 빈 배열이면 기본 설정으로 초기화
   isCompleted?: boolean;
 }
 
