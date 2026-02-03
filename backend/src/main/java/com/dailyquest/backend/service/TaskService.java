@@ -50,6 +50,7 @@ public class TaskService {
                 .description(request.getDescription())
                 .priority(request.getPriority() != null ? request.getPriority() : Priority.MEDIUM)
                 .dueDate(request.getDueDate())
+                .dueTime(request.getDueTime())
                 .isRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false)
                 .recurrenceType(request.getRecurrenceType())
                 .recurrenceInterval(request.getRecurrenceInterval() != null ? request.getRecurrenceInterval() : 1)
@@ -152,6 +153,9 @@ public class TaskService {
         if (request.getDueDate() != null) {
             task.updateDueDate(request.getDueDate());
         }
+        if (request.getDueTime() != null) {
+            task.updateDueTime(request.getDueTime());
+        }
         if (request.getProjectId() != null) {
             Project project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
@@ -233,6 +237,7 @@ public class TaskService {
                 .description(completedTask.getDescription())
                 .priority(completedTask.getPriority())
                 .dueDate(nextDueDate)
+                .dueTime(completedTask.getDueTime())
                 .isRecurring(true)
                 .recurrenceType(completedTask.getRecurrenceType())
                 .recurrenceInterval(completedTask.getRecurrenceInterval())

@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class TaskDto {
 
@@ -28,9 +29,11 @@ public class TaskDto {
         private Priority priority;
         
         private LocalDate dueDate;
-        
+
+        private LocalTime dueTime;
+
         private Long projectId;
-        
+
         // Recurring task
         private Boolean isRecurring;
         private RecurrenceType recurrenceType;
@@ -48,16 +51,18 @@ public class TaskDto {
     @AllArgsConstructor
     @Builder
     public static class UpdateRequest {
-        
+
         @Size(max = 255, message = "Title must be 255 characters or less")
         private String title;
-        
+
         private String description;
-        
+
         private Priority priority;
-        
+
         private LocalDate dueDate;
-        
+
+        private LocalTime dueTime;
+
         private Long projectId;
         
         // Recurring task
@@ -83,6 +88,7 @@ public class TaskDto {
         private String description;
         private Priority priority;
         private LocalDate dueDate;
+        private LocalTime dueTime;
         private Boolean isCompleted;
         private LocalDateTime completedAt;
         
@@ -108,6 +114,7 @@ public class TaskDto {
                     .description(task.getDescription())
                     .priority(task.getPriority())
                     .dueDate(task.getDueDate())
+                    .dueTime(task.getDueTime())
                     .isCompleted(task.getIsCompleted())
                     .completedAt(task.getCompletedAt())
                     .isRecurring(task.getIsRecurring())
@@ -133,6 +140,7 @@ public class TaskDto {
         private String title;
         private Priority priority;
         private LocalDate dueDate;
+        private LocalTime dueTime;
         private Boolean isCompleted;
         private Boolean isRecurring;
         private Long projectId;
@@ -145,6 +153,7 @@ public class TaskDto {
                     .title(task.getTitle())
                     .priority(task.getPriority())
                     .dueDate(task.getDueDate())
+                    .dueTime(task.getDueTime())
                     .isCompleted(task.getIsCompleted())
                     .isRecurring(task.getIsRecurring())
                     .projectId(task.getProject() != null ? task.getProject().getId() : null)
