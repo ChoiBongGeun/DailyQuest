@@ -41,7 +41,7 @@ export const authApi = {
 
   deleteAccount: async (password: string): Promise<void> => {
     const response = await axiosInstance.delete('/api/users/me', {
-      params: { password },
+      data: { password },
     });
     unwrapApiResponse(response);
   },

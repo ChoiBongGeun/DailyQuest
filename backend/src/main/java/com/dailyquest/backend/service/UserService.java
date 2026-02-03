@@ -38,9 +38,16 @@ public class UserService {
     }
 
     public User login(UserDto.LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS));
+        // 타이밍 공격 방지: 이메일 존재 여부와 관계없이 항상 패스워드 해싱 수행
+        var userOptional = userRepository.findByEmail(request.getEmail());
 
+        if (userOptional.isEmpty()) {
+            // 더미 해시로 타이밍 일관성 유지
+            passwordEncoder.matches(request.getPassword(), "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
+            throw new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        User user = userOptional.get();
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS);
         }

@@ -65,6 +65,16 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    public static class DeleteRequest {
+
+        @NotBlank(message = "Password is required")
+        private String password;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class Response {
         
         private Long id;

@@ -20,7 +20,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const url = config.url || '';
-        const isPublicUrl = PUBLIC_URLS.some(publicUrl => url.includes(publicUrl));
+        const isPublicUrl = PUBLIC_URLS.some(publicUrl => url === publicUrl || url.startsWith(publicUrl + '?') || url.startsWith(publicUrl + '/'));
 
         if (!isPublicUrl) {
             const isTokenValid = useAuthStore.getState().checkTokenExpiry();

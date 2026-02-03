@@ -76,9 +76,10 @@ public class UserController {
     @Operation(summary = "Delete account", description = "Delete user account",
                security = @SecurityRequirement(name = "bearerAuth"))
     @DeleteMapping("/me")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@RequestParam String password) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @Valid @RequestBody UserDto.DeleteRequest request) {
         Long userId = SecurityUtil.getCurrentUserId();
-        userService.deleteUser(userId, password);
+        userService.deleteUser(userId, request.getPassword());
         return ResponseEntity.ok(ApiResponse.success("Account deleted successfully"));
     }
 
