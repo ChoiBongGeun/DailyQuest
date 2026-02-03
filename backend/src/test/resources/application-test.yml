@@ -12,6 +12,8 @@ spring:
   h2:
     console:
       enabled: true
+  flyway:
+    enabled: false
 
 jwt:
   secret: test-secret-key-for-testing-must-be-at-least-256-bits-long-for-security-requirements

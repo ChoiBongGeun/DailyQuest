@@ -14,6 +14,10 @@ spring:
       hibernate:
         format_sql: ${SHOW_SQL:false}
     show-sql: ${SHOW_SQL:false}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
 
 server:
   port: 8080
