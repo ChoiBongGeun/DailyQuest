@@ -46,3 +46,17 @@ gradlew.bat test
 - `service/` - 비즈니스 로직
 - `domain/` - Entity, Repository
 - `dto/` - Request/Response DTO
+
+## 🆕 최근 백엔드 변경 사항
+
+- 프로젝트 통계 API 추가
+  - `GET /api/projects/{projectId}/stats`
+- 우선순위별 할 일 조회 API 추가
+  - `GET /api/tasks/priority/{priority}`
+- 프로젝트/할 일 소유권 검증 강화
+  - 본인 리소스가 아니면 `403 (NO_PERMISSION, code: 403001)` 반환
+- Task/Project 서비스의 owner 검증 로직 반영
+- 통합 테스트 추가
+  - `TaskControllerIntegrationTest`: 타인 task 접근 403 검증
+  - `ProjectControllerIntegrationTest`: 타인 project 접근 403 검증
+- 전체 테스트 재검증 완료 (`./gradlew test`, Java 17)

@@ -1,0 +1,24 @@
+# 로컬 개발 환경 설정
+# 실행: ./gradlew bootRun --args='--spring.profiles.active=dev'
+# 또는 IDE에서 Active Profile: dev 설정
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/dailyquest?useUnicode=true&characterEncoding=UTF-8
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: dailyquest-dev-secret-key-for-local-development-must-be-at-least-256-bits-long-for-security
+  expiration: 86400000
+
+logging:
+  level:
+    com.dailyquest: DEBUG
