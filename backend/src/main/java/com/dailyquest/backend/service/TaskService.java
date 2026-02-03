@@ -42,6 +42,7 @@ public class TaskService {
 
         validateRecurringConfiguration(request.getIsRecurring(), request.getRecurrenceType());
         validateRecurrenceInterval(request.getRecurrenceInterval());
+        validateDueTime(request.getDueDate(), request.getDueTime());
 
         Task task = Task.builder()
                 .user(user)
@@ -154,6 +155,7 @@ public class TaskService {
             task.updateDueDate(request.getDueDate());
         }
         if (request.getDueTime() != null) {
+            validateDueTime(task.getDueDate(), request.getDueTime());
             task.updateDueTime(request.getDueTime());
         }
         if (request.getProjectId() != null) {
@@ -282,6 +284,15 @@ public class TaskService {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT,
                     "recurrenceInterval must be between 1 and 365"
+            );
+        }
+    }
+
+    private void validateDueTime(LocalDate dueDate, java.time.LocalTime dueTime) {
+        if (dueTime != null && dueDate == null) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "dueDate is required when dueTime is set"
             );
         }
     }

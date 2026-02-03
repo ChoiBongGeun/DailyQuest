@@ -81,9 +81,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     if (!nickname.trim() || nickname.trim().length < 2) return;
     try {
       const updated = await updateNickname.mutateAsync(nickname.trim());
-      useAuthStore.setState((state) => ({
-        user: state.user ? { ...state.user, nickname: updated.nickname } : null,
-      }));
+      useAuthStore.getState().updateUser({ nickname: updated.nickname });
       addToast(t('settings.nicknameUpdated'), 'success');
     } catch (error) {
       addToast(extractErrorMessage(error, t('error.generic')), 'error');
@@ -261,38 +259,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       {t('settings.changePassword')}
                     </h3>
 
-                    <div className="relative">
-                      <Input
-                        type={showCurrentPw ? 'text' : 'password'}
-                        label={t('settings.currentPassword')}
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        fullWidth
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPw(!showCurrentPw)}
-                        className="absolute right-3 top-[38px] text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                        {t('settings.currentPassword')}
+                      </label>
+                      <div className="relative flex items-center">
+                        <Input
+                          type={showCurrentPw ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          fullWidth
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPw(!showCurrentPw)}
+                          className="absolute right-3 text-neutral-400 hover:text-neutral-600"
+                        >
+                          {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="relative">
-                      <Input
-                        type={showNewPw ? 'text' : 'password'}
-                        label={t('settings.newPassword')}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        fullWidth
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPw(!showNewPw)}
-                        className="absolute right-3 top-[38px] text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                        {t('settings.newPassword')}
+                      </label>
+                      <div className="relative flex items-center">
+                        <Input
+                          type={showNewPw ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          fullWidth
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPw(!showNewPw)}
+                          className="absolute right-3 text-neutral-400 hover:text-neutral-600"
+                        >
+                          {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <Input

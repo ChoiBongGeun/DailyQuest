@@ -22,6 +22,15 @@ export function useTaskReminder() {
   const addToast = useUIStore((s) => s.addToast);
   const sentRemindersRef = useRef<Set<string>>(new Set());
 
+  // Store tasks in refs to avoid interval recreation on data changes
+  const todayTasksRef = useRef(todayTasks);
+  const weekTasksRef = useRef(weekTasks);
+  const reminderOffsetsRef = useRef(reminderOffsets);
+
+  useEffect(() => { todayTasksRef.current = todayTasks; }, [todayTasks]);
+  useEffect(() => { weekTasksRef.current = weekTasks; }, [weekTasks]);
+  useEffect(() => { reminderOffsetsRef.current = reminderOffsets; }, [reminderOffsets]);
+
   // Load sent reminders from sessionStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -90,10 +99,11 @@ export function useTaskReminder() {
   );
 
   const checkReminders = useCallback(() => {
-    if (!reminderOffsets.length) return;
+    const offsets = reminderOffsetsRef.current;
+    if (!offsets.length) return;
 
     const now = new Date();
-    const allTasks = [...(todayTasks || []), ...(weekTasks || [])];
+    const allTasks = [...(todayTasksRef.current || []), ...(weekTasksRef.current || [])];
     const seen = new Set<number>();
 
     for (const task of allTasks) {
@@ -103,13 +113,21 @@ export function useTaskReminder() {
       }
       seen.add(task.id);
 
-      // Parse due datetime
-      const [year, month, day] = task.dueDate.split('-').map(Number);
-      const [hour, minute] = task.dueTime.split(':').map(Number);
+      // Parse due datetime safely
+      const dateParts = task.dueDate.split('-');
+      const timeParts = task.dueTime.split(':');
+      if (dateParts.length < 3 || timeParts.length < 2) {
+        continue;
+      }
+      const [year, month, day] = dateParts.map(Number);
+      const [hour, minute] = timeParts.map(Number);
+      if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+        continue;
+      }
       const dueDateTime = new Date(year, month - 1, day, hour, minute, 0, 0);
 
-      // Skip if due time is in the past
-      if (dueDateTime <= now) {
+      // Skip if invalid date or due time is in the past
+      if (isNaN(dueDateTime.getTime()) || dueDateTime <= now) {
         continue;
       }
 
@@ -118,7 +136,7 @@ export function useTaskReminder() {
       const minutesUntilDue = Math.floor(diffMs / (1000 * 60));
 
       // Check each reminder offset
-      for (const offset of reminderOffsets) {
+      for (const offset of offsets) {
         // Trigger if we're within a 1-minute window of the offset
         // e.g., if offset is 60, trigger when minutesUntilDue is between 59 and 61
         if (minutesUntilDue >= offset - 1 && minutesUntilDue <= offset + 1) {
@@ -126,7 +144,7 @@ export function useTaskReminder() {
         }
       }
     }
-  }, [todayTasks, weekTasks, reminderOffsets, sendNotification]);
+  }, [sendNotification]);
 
   // Set up interval to check reminders
   useEffect(() => {

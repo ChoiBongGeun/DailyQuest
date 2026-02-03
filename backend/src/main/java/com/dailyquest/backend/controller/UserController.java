@@ -57,9 +57,9 @@ public class UserController {
                security = @SecurityRequirement(name = "bearerAuth"))
     @PatchMapping("/me/nickname")
     public ResponseEntity<ApiResponse<UserDto.Response>> updateNickname(
-            @RequestParam String nickname) {
+            @Valid @RequestBody UserDto.NicknameRequest request) {
         Long userId = SecurityUtil.getCurrentUserId();
-        UserDto.Response response = userService.updateNickname(userId, nickname);
+        UserDto.Response response = userService.updateNickname(userId, request.getNickname());
         return ResponseEntity.ok(ApiResponse.success("Nickname updated successfully", response));
     }
 

@@ -5,7 +5,6 @@ import { Bell, AlertTriangle, Clock, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTodayTasks, useWeekTasks } from '@/hooks/use-tasks';
 import type { Task } from '@/types';
-import { formatRelativeTime } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -35,8 +34,9 @@ export const NotificationDropdown: React.FC = () => {
 
   const notifications = React.useMemo(() => {
     const items: Notification[] = [];
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const nowMs = Date.now();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
     const allTasks = [...(todayTasks || []), ...(weekTasks || [])];
     const seen = new Set<number>();
@@ -47,7 +47,7 @@ export const NotificationDropdown: React.FC = () => {
 
       if (task.isCompleted && task.completedAt) {
         const completedDate = new Date(task.completedAt);
-        const hoursDiff = (Date.now() - completedDate.getTime()) / (1000 * 60 * 60);
+        const hoursDiff = (nowMs - completedDate.getTime()) / (1000 * 60 * 60);
         if (hoursDiff < 24) {
           items.push({
             id: `completed-${task.id}`,
@@ -64,7 +64,7 @@ export const NotificationDropdown: React.FC = () => {
       const dueDate = new Date(task.dueDate);
       dueDate.setHours(0, 0, 0, 0);
 
-      if (dueDate < now) {
+      if (dueDate < todayStart) {
         items.push({
           id: `overdue-${task.id}`,
           type: 'overdue',
@@ -72,7 +72,7 @@ export const NotificationDropdown: React.FC = () => {
           message: `"${task.title}" ${t('notifications.taskOverdue')}`,
         });
       } else {
-        const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntilDue = Math.ceil((dueDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
         if (daysUntilDue <= 1) {
           items.push({
             id: `dueSoon-${task.id}`,

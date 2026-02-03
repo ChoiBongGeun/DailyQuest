@@ -40,7 +40,7 @@ export const authApi = {
   },
 
   updateNickname: async (nickname: string): Promise<User> => {
-    const response = await axiosInstance.patch(`/api/users/me/nickname?nickname=${encodeURIComponent(nickname)}`);
+    const response = await axiosInstance.patch('/api/users/me/nickname', { nickname });
     return unwrapApiResponse<User>(response);
   },
 
