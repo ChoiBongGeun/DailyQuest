@@ -40,7 +40,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const { user, logout } = useAuthStore();
   const {
     theme,
-    toggleTheme,
+    setTheme,
     language,
     setLanguage,
     reminderOffsets,
@@ -53,11 +53,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const [activeTab, setActiveTab] = React.useState<SettingsTab>('profile');
 
-  // Profile state
   const [nickname, setNickname] = React.useState(user?.nickname || '');
   const updateNickname = useUpdateNickname();
 
-  // Password state
   const [currentPassword, setCurrentPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
@@ -65,12 +63,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [showNewPw, setShowNewPw] = React.useState(false);
   const changePassword = useChangePassword();
 
-  // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [deletePassword, setDeletePassword] = React.useState('');
   const deleteAccount = useDeleteAccount();
 
-  // Reminder state
   const [newReminderMinutes, setNewReminderMinutes] = React.useState('');
 
   React.useEffect(() => {
@@ -156,7 +152,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     return `${minutes}${t('settings.minutesBefore')}`;
   };
 
-  // Check browser notification permission on mount
   React.useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setNotificationPermission(Notification.permission);
@@ -178,8 +173,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         <div className="w-full max-w-2xl max-h-[92vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-neutral-200 dark:border-neutral-800">
+                    <div className="flex items-center justify-between p-4 sm:p-5 border-b border-neutral-200 dark:border-neutral-800">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {t('settings.title')}
             </h2>
@@ -192,8 +186,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* Tab Sidebar */}
-            <nav className="w-44 shrink-0 border-r border-neutral-200 dark:border-neutral-800 p-2 space-y-1 bg-neutral-50 dark:bg-neutral-900/50">
+                        <nav className="w-44 shrink-0 border-r border-neutral-200 dark:border-neutral-800 p-2 space-y-1 bg-neutral-50 dark:bg-neutral-900/50">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -210,10 +203,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               ))}
             </nav>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {/* Profile Tab */}
-              {activeTab === 'profile' && (
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            {activeTab === 'profile' && (
                 <>
                   <div className="space-y-4">
                     <div>
@@ -251,8 +242,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </>
               )}
 
-              {/* Security Tab */}
-              {activeTab === 'security' && (
+                            {activeTab === 'security' && (
                 <>
                   <div className="space-y-4">
                     <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
@@ -319,8 +309,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     </Button>
                   </div>
 
-                  {/* Danger Zone */}
-                  <div className="mt-8 pt-6 border-t border-red-200 dark:border-red-900/30">
+                                    <div className="mt-8 pt-6 border-t border-red-200 dark:border-red-900/30">
                     <h3 className="text-base font-semibold text-red-600 dark:text-red-400 mb-2">
                       {t('settings.dangerZone')}
                     </h3>
@@ -376,17 +365,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </>
               )}
 
-              {/* Appearance Tab */}
-              {activeTab === 'appearance' && (
+                            {activeTab === 'appearance' && (
                 <>
-                  {/* Theme */}
                   <div className="space-y-3">
                     <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                       {t('settings.theme')}
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
-                        onClick={() => { if (theme === 'dark') toggleTheme(); }}
+                        onClick={() => setTheme('light')}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                           theme === 'light'
                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -403,7 +390,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       </button>
 
                       <button
-                        onClick={() => { if (theme === 'light') toggleTheme(); }}
+                        onClick={() => setTheme('dark')}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                           theme === 'dark'
                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -421,8 +408,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     </div>
                   </div>
 
-                  {/* Language */}
-                  <div className="space-y-3">
+                                    <div className="space-y-3">
                     <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                       <Globe className="w-4 h-4" />
                       {t('settings.language')}
@@ -462,11 +448,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </>
               )}
 
-              {/* Notifications Tab */}
-              {activeTab === 'notifications' && (
+                            {activeTab === 'notifications' && (
                 <>
-                  {/* Reminder Offsets */}
-                  <div className="space-y-3">
+                                    <div className="space-y-3">
                     <div>
                       <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                         {t('settings.reminderTitle')}
@@ -523,8 +507,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     </div>
                   </div>
 
-                  {/* Browser Notification Permission */}
-                  <div className="space-y-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                                    <div className="space-y-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                     <div>
                       <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                         {t('settings.browserNotification')}

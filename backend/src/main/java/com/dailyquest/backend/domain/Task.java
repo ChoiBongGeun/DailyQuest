@@ -53,8 +53,6 @@ public class Task {
     @Column(name = "due_time")
     private LocalTime dueTime;
 
-    // 개별 알림 설정 (분 단위, 콤마 구분 문자열로 저장. 예: "60,30,10")
-    // null이면 사용자 기본 설정 사용
     @Column(name = "reminder_offsets")
     private String reminderOffsets;
 

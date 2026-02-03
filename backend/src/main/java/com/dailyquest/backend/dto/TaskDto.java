@@ -15,6 +15,20 @@ import java.util.List;
 
 public class TaskDto {
 
+    private static List<Integer> parseReminderOffsets(String offsets) {
+        if (offsets == null || offsets.isBlank()) {
+            return null;
+        }
+        try {
+            return java.util.Arrays.stream(offsets.split(","))
+                    .map(String::trim)
+                    .map(Integer::parseInt)
+                    .toList();
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -33,7 +47,6 @@ public class TaskDto {
 
         private LocalTime dueTime;
 
-        // 개별 알림 설정 (분 단위). null이면 사용자 기본 설정 사용
         private List<Integer> reminderOffsets;
 
         private Long projectId;
@@ -67,7 +80,6 @@ public class TaskDto {
 
         private LocalTime dueTime;
 
-        // 개별 알림 설정 (분 단위). null이면 변경 없음, 빈 배열이면 기본 설정 사용으로 초기화
         private List<Integer> reminderOffsets;
 
         private Long projectId;
@@ -96,7 +108,7 @@ public class TaskDto {
         private Priority priority;
         private LocalDate dueDate;
         private LocalTime dueTime;
-        private List<Integer> reminderOffsets; // null이면 사용자 기본 설정 사용
+        private List<Integer> reminderOffsets;
         private Boolean isCompleted;
         private LocalDateTime completedAt;
 
@@ -138,20 +150,6 @@ public class TaskDto {
                     .updatedAt(task.getUpdatedAt())
                     .build();
         }
-
-        private static List<Integer> parseReminderOffsets(String offsets) {
-            if (offsets == null || offsets.isBlank()) {
-                return null;
-            }
-            try {
-                return java.util.Arrays.stream(offsets.split(","))
-                        .map(String::trim)
-                        .map(Integer::parseInt)
-                        .toList();
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
     }
 
     @Getter
@@ -164,7 +162,7 @@ public class TaskDto {
         private Priority priority;
         private LocalDate dueDate;
         private LocalTime dueTime;
-        private List<Integer> reminderOffsets; // null이면 사용자 기본 설정 사용
+        private List<Integer> reminderOffsets;
         private Boolean isCompleted;
         private Boolean isRecurring;
         private Long projectId;
@@ -185,20 +183,6 @@ public class TaskDto {
                     .projectName(task.getProject() != null ? task.getProject().getName() : null)
                     .projectColor(task.getProject() != null ? task.getProject().getColor() : null)
                     .build();
-        }
-
-        private static List<Integer> parseReminderOffsets(String offsets) {
-            if (offsets == null || offsets.isBlank()) {
-                return null;
-            }
-            try {
-                return java.util.Arrays.stream(offsets.split(","))
-                        .map(String::trim)
-                        .map(Integer::parseInt)
-                        .toList();
-            } catch (NumberFormatException e) {
-                return null;
-            }
         }
     }
 }

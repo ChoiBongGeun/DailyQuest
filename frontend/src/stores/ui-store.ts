@@ -29,19 +29,18 @@ interface UIState {
 
   // Theme
   theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
 
   // Language
   language: 'ko' | 'en';
   setLanguage: (lang: 'ko' | 'en') => void;
 
-  // Reminder settings (minutes before due time)
   reminderOffsets: number[];
   setReminderOffsets: (offsets: number[]) => void;
   addReminderOffset: (offset: number) => void;
   removeReminderOffset: (offset: number) => void;
 
-  // Browser notification permission
   notificationPermission: NotificationPermission | 'default';
   setNotificationPermission: (permission: NotificationPermission) => void;
 }
@@ -89,6 +88,7 @@ export const useUIStore = create<UIState>()(
 
       // Theme
       theme: 'light',
+      setTheme: (theme) => set({ theme }),
       toggleTheme: () =>
         set((state) => ({
           theme: state.theme === 'light' ? 'dark' : 'light',
@@ -98,7 +98,6 @@ export const useUIStore = create<UIState>()(
       language: 'ko',
       setLanguage: (lang) => set({ language: lang }),
 
-      // Reminder settings (default: 60 min, 10 min before)
       reminderOffsets: [60, 10],
       setReminderOffsets: (offsets) => set({ reminderOffsets: offsets }),
       addReminderOffset: (offset) =>
@@ -110,7 +109,6 @@ export const useUIStore = create<UIState>()(
           reminderOffsets: state.reminderOffsets.filter((o) => o !== offset),
         })),
 
-      // Browser notification permission
       notificationPermission: 'default',
       setNotificationPermission: (permission) => set({ notificationPermission: permission }),
     }),
