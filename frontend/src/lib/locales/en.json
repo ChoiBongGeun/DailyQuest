@@ -21,7 +21,6 @@
     "month": "This Month",
     "year": "This Year"
   },
-
   "auth": {
     "login": "Log In",
     "signup": "Sign Up",
@@ -47,7 +46,6 @@
     "nicknameHelp": "At least 2 characters",
     "createAccount": "Create a new account"
   },
-
   "nav": {
     "dashboard": "Dashboard",
     "today": "Today",
@@ -57,7 +55,6 @@
     "settings": "Settings",
     "notifications": "Notifications"
   },
-
   "settings": {
     "title": "Settings",
     "profile": "Profile",
@@ -99,7 +96,6 @@
     "notificationDenied": "Notifications denied",
     "notificationBlocked": "Notifications are blocked in browser settings"
   },
-
   "notifications": {
     "title": "Notifications",
     "empty": "No new notifications",
@@ -111,7 +107,6 @@
     "reminderTitle": "Due Reminder",
     "reminderBody": "{{title}} - due in {{time}}"
   },
-
   "task": {
     "title": "Tasks",
     "newTask": "New Task",
@@ -124,6 +119,12 @@
     "priority": "Priority",
     "dueDate": "Due Date",
     "dueTime": "Due Time",
+    "reminderTitle": "Reminder",
+    "useDefaultReminder": "Use default",
+    "customReminder": "Custom",
+    "addReminder": "Add reminder",
+    "minutesBefore": "min before",
+    "hourBefore": "h before",
     "project": "Project",
     "recurring": "Recurring",
     "high": "High",
@@ -140,7 +141,6 @@
     "completedTasks": "Completed Tasks",
     "pendingTasks": "Pending"
   },
-
   "project": {
     "title": "Projects",
     "newProject": "New Project",
@@ -153,7 +153,6 @@
     "personal": "Personal",
     "work": "Work"
   },
-
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Let's have a great day!",
@@ -166,7 +165,6 @@
     "weekSummary": "Weekly Summary",
     "trend": "vs last week"
   },
-
   "landing": {
     "hero": {
       "title": "DailyQuest",
@@ -203,7 +201,6 @@
       "copyright": "© 2026 DailyQuest. All rights reserved."
     }
   },
-
   "date": {
     "dday": "D-Day",
     "daysAgo": "days ago",
@@ -215,14 +212,12 @@
     "justNow": "just now",
     "yesterday": "yesterday"
   },
-
   "validation": {
     "required": "This field is required",
     "emailInvalid": "Please enter a valid email address",
     "passwordTooShort": "Password must be at least 8 characters",
     "passwordMismatch": "Passwords do not match"
   },
-
   "error": {
     "generic": "An error occurred",
     "network": "Please check your network connection",
@@ -231,7 +226,6 @@
     "notFound": "Page not found",
     "serverError": "Server error occurred"
   },
-
   "success": {
     "taskCreated": "Task created",
     "taskUpdated": "Task updated",

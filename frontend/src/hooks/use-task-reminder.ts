@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTodayTasks, useWeekTasks } from './use-tasks';
 import { useUIStore } from '@/stores/ui-store';
@@ -15,7 +15,7 @@ const REMINDER_CHECK_INTERVAL = 30 * 1000; // 30 seconds
  * - Uses sessionStorage to prevent duplicate reminders
  */
 export function useTaskReminder() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { data: todayTasks } = useTodayTasks();
   const { data: weekTasks } = useWeekTasks();
   const reminderOffsets = useUIStore((s) => s.reminderOffsets);
@@ -27,9 +27,15 @@ export function useTaskReminder() {
   const weekTasksRef = useRef(weekTasks);
   const reminderOffsetsRef = useRef(reminderOffsets);
 
-  useEffect(() => { todayTasksRef.current = todayTasks; }, [todayTasks]);
-  useEffect(() => { weekTasksRef.current = weekTasks; }, [weekTasks]);
-  useEffect(() => { reminderOffsetsRef.current = reminderOffsets; }, [reminderOffsets]);
+  useEffect(() => {
+    todayTasksRef.current = todayTasks;
+  }, [todayTasks]);
+  useEffect(() => {
+    weekTasksRef.current = weekTasks;
+  }, [weekTasks]);
+  useEffect(() => {
+    reminderOffsetsRef.current = reminderOffsets;
+  }, [reminderOffsets]);
 
   // Load sent reminders from sessionStorage on mount
   useEffect(() => {
@@ -47,10 +53,7 @@ export function useTaskReminder() {
 
   const saveSentReminders = useCallback(() => {
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem(
-        'sent-task-reminders',
-        JSON.stringify([...sentRemindersRef.current])
-      );
+      sessionStorage.setItem('sent-task-reminders', JSON.stringify([...sentRemindersRef.current]));
     }
   }, []);
 
@@ -68,9 +71,9 @@ export function useTaskReminder() {
 
       // Format time remaining
       const timeStr =
-        minutesLeft >= 60
-          ? `${Math.floor(minutesLeft / 60)}${i18n.language === 'ko' ? '시간' : 'h'}`
-          : `${minutesLeft}${i18n.language === 'ko' ? '분' : 'm'}`;
+        minutesLeft >= 60 && minutesLeft % 60 === 0
+          ? `${Math.floor(minutesLeft / 60)}${t('task.hourBefore')}`
+          : `${minutesLeft}${t('task.minutesBefore')}`;
 
       const title = t('notifications.reminderTitle');
       const body = t('notifications.reminderBody', {
@@ -79,7 +82,7 @@ export function useTaskReminder() {
       });
 
       // In-app toast (always)
-      addToast(`⏰ ${task.title} - ${timeStr} ${i18n.language === 'ko' ? '후 마감' : 'until due'}`, 'warning');
+      addToast(body, 'warning');
 
       // Browser notification (if permission granted)
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -95,13 +98,10 @@ export function useTaskReminder() {
         }
       }
     },
-    [t, i18n.language, addToast, saveSentReminders]
+    [addToast, saveSentReminders, t]
   );
 
   const checkReminders = useCallback(() => {
-    const offsets = reminderOffsetsRef.current;
-    if (!offsets.length) return;
-
     const now = new Date();
     const allTasks = [...(todayTasksRef.current || []), ...(weekTasksRef.current || [])];
     const seen = new Set<number>();
@@ -121,13 +121,13 @@ export function useTaskReminder() {
       }
       const [year, month, day] = dateParts.map(Number);
       const [hour, minute] = timeParts.map(Number);
-      if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+      if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day) || Number.isNaN(hour) || Number.isNaN(minute)) {
         continue;
       }
       const dueDateTime = new Date(year, month - 1, day, hour, minute, 0, 0);
 
       // Skip if invalid date or due time is in the past
-      if (isNaN(dueDateTime.getTime()) || dueDateTime <= now) {
+      if (Number.isNaN(dueDateTime.getTime()) || dueDateTime <= now) {
         continue;
       }
 
@@ -135,8 +135,18 @@ export function useTaskReminder() {
       const diffMs = dueDateTime.getTime() - now.getTime();
       const minutesUntilDue = Math.floor(diffMs / (1000 * 60));
 
+      // Task-level reminder settings take precedence over global settings
+      const effectiveOffsets =
+        task.reminderOffsets && task.reminderOffsets.length > 0
+          ? task.reminderOffsets
+          : reminderOffsetsRef.current;
+
+      if (!effectiveOffsets.length) {
+        continue;
+      }
+
       // Check each reminder offset
-      for (const offset of offsets) {
+      for (const offset of effectiveOffsets) {
         // Trigger if we're within a 1-minute window of the offset
         // e.g., if offset is 60, trigger when minutesUntilDue is between 59 and 61
         if (minutesUntilDue >= offset - 1 && minutesUntilDue <= offset + 1) {

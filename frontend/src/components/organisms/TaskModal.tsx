@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X } from 'lucide-react';
+import { Bell, Minus, Plus, X } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Textarea } from '../atoms/Textarea';
@@ -24,6 +24,8 @@ interface TaskFormData {
   priority: Priority;
   dueDate?: string;
   dueTime?: string;
+  reminderOffsets: number[];
+  useDefaultReminder: boolean;
   projectId?: number;
 }
 
@@ -33,6 +35,8 @@ const EMPTY_FORM: TaskFormData = {
   priority: 'MEDIUM',
   dueDate: '',
   dueTime: '',
+  reminderOffsets: [],
+  useDefaultReminder: true,
   projectId: undefined,
 };
 
@@ -46,25 +50,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
   const updateTask = useUpdateTask();
   const createProject = useCreateProject();
   const { data: projects } = useProjects();
+  const defaultReminderOffsets = useUIStore((state) => state.reminderOffsets);
   const addToast = useUIStore((state) => state.addToast);
+  const [newReminderMinutes, setNewReminderMinutes] = React.useState('');
 
   React.useEffect(() => {
     if (!editingTask) {
       setFormData(EMPTY_FORM);
+      setNewReminderMinutes('');
       setIsCreatingProject(false);
       setNewProjectName('');
       setNewProjectColor('#3B82F6');
       return;
     }
 
+    const customReminderOffsets = editingTask.reminderOffsets ?? [];
     setFormData({
       title: editingTask.title,
       description: editingTask.description || '',
       priority: editingTask.priority,
       dueDate: editingTask.dueDate || '',
       dueTime: editingTask.dueTime || '',
+      reminderOffsets: customReminderOffsets,
+      useDefaultReminder: editingTask.reminderOffsets == null,
       projectId: editingTask.projectId,
     });
+    setNewReminderMinutes('');
   }, [editingTask]);
 
   const handleCreateProject = async () => {
@@ -94,6 +105,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
       priority: formData.priority,
       dueDate: formData.dueDate || undefined,
       dueTime: formData.dueTime || undefined,
+      reminderOffsets: editingTask
+        ? formData.useDefaultReminder
+          ? []
+          : formData.reminderOffsets
+        : formData.useDefaultReminder
+          ? null
+          : formData.reminderOffsets,
       projectId: formData.projectId,
     };
 
@@ -114,6 +132,33 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
   };
 
   if (!isOpen) return null;
+
+  const formatReminderOffset = (minutes: number) => {
+    if (minutes >= 60 && minutes % 60 === 0) {
+      return `${minutes / 60}${t('task.hourBefore')}`;
+    }
+    return `${minutes}${t('task.minutesBefore')}`;
+  };
+
+  const addReminderOffset = () => {
+    const minutes = Number.parseInt(newReminderMinutes, 10);
+    if (Number.isNaN(minutes) || minutes <= 0 || minutes > 1440) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      reminderOffsets: [...new Set([...prev.reminderOffsets, minutes])].sort((a, b) => b - a),
+    }));
+    setNewReminderMinutes('');
+  };
+
+  const removeReminderOffset = (offset: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      reminderOffsets: prev.reminderOffsets.filter((value) => value !== offset),
+    }));
+  };
 
   const priorityOptions: Array<{ value: Priority; label: string }> = [
     { value: 'HIGH', label: t('task.high') },
@@ -286,6 +331,80 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
                 onChange={(e) => setFormData((prev) => ({ ...prev, dueTime: e.target.value }))}
                 fullWidth
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('task.reminderTitle')}</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      useDefaultReminder: !prev.useDefaultReminder,
+                      reminderOffsets:
+                        !prev.useDefaultReminder || prev.reminderOffsets.length
+                          ? prev.reminderOffsets
+                          : [...defaultReminderOffsets],
+                    }))
+                  }
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition ${
+                    formData.useDefaultReminder
+                      ? 'border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300'
+                      : 'border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                  }`}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  {formData.useDefaultReminder ? t('task.useDefaultReminder') : t('task.customReminder')}
+                </button>
+              </div>
+
+              {!formData.useDefaultReminder && (
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3 space-y-3 bg-neutral-50 dark:bg-neutral-800/60">
+                  <div className="flex flex-wrap gap-2">
+                    {formData.reminderOffsets.map((offset) => (
+                      <div
+                        key={offset}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm"
+                      >
+                        <span>{formatReminderOffset(offset)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeReminderOffset(offset)}
+                          className="p-0.5 hover:bg-primary-200 dark:hover:bg-primary-800 rounded-full"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="30"
+                      value={newReminderMinutes}
+                      onChange={(e) => setNewReminderMinutes(e.target.value)}
+                      className="w-24"
+                      min={1}
+                      max={1440}
+                    />
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('task.minutesBefore')}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addReminderOffset}
+                      disabled={!newReminderMinutes}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {t('task.addReminder')}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
