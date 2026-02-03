@@ -10,27 +10,47 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 
 public class TaskDto {
+
+    private static List<Integer> parseReminderOffsets(String offsets) {
+        if (offsets == null || offsets.isBlank()) {
+            return null;
+        }
+        try {
+            return java.util.Arrays.stream(offsets.split(","))
+                    .map(String::trim)
+                    .map(Integer::parseInt)
+                    .toList();
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class CreateRequest {
-        
+
         @NotBlank(message = "Title is required")
         @Size(max = 255, message = "Title must be 255 characters or less")
         private String title;
-        
+
         private String description;
-        
+
         private Priority priority;
-        
+
         private LocalDate dueDate;
-        
+
+        private LocalTime dueTime;
+
+        private List<Integer> reminderOffsets;
+
         private Long projectId;
-        
+
         // Recurring task
         private Boolean isRecurring;
         private RecurrenceType recurrenceType;
@@ -48,18 +68,22 @@ public class TaskDto {
     @AllArgsConstructor
     @Builder
     public static class UpdateRequest {
-        
+
         @Size(max = 255, message = "Title must be 255 characters or less")
         private String title;
-        
+
         private String description;
-        
+
         private Priority priority;
-        
+
         private LocalDate dueDate;
-        
+
+        private LocalTime dueTime;
+
+        private List<Integer> reminderOffsets;
+
         private Long projectId;
-        
+
         // Recurring task
         private Boolean isRecurring;
         private RecurrenceType recurrenceType;
@@ -77,27 +101,29 @@ public class TaskDto {
     @AllArgsConstructor
     @Builder
     public static class Response {
-        
+
         private Long id;
         private String title;
         private String description;
         private Priority priority;
         private LocalDate dueDate;
+        private LocalTime dueTime;
+        private List<Integer> reminderOffsets;
         private Boolean isCompleted;
         private LocalDateTime completedAt;
-        
+
         // Recurring task
         private Boolean isRecurring;
         private RecurrenceType recurrenceType;
         private Integer recurrenceInterval;
         private LocalDate recurrenceEndDate;
         private Long parentTaskId;
-        
+
         // Project info
         private Long projectId;
         private String projectName;
         private String projectColor;
-        
+
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -108,6 +134,8 @@ public class TaskDto {
                     .description(task.getDescription())
                     .priority(task.getPriority())
                     .dueDate(task.getDueDate())
+                    .dueTime(task.getDueTime())
+                    .reminderOffsets(parseReminderOffsets(task.getReminderOffsets()))
                     .isCompleted(task.getIsCompleted())
                     .completedAt(task.getCompletedAt())
                     .isRecurring(task.getIsRecurring())
@@ -133,6 +161,8 @@ public class TaskDto {
         private String title;
         private Priority priority;
         private LocalDate dueDate;
+        private LocalTime dueTime;
+        private List<Integer> reminderOffsets;
         private Boolean isCompleted;
         private Boolean isRecurring;
         private Long projectId;
@@ -145,6 +175,8 @@ public class TaskDto {
                     .title(task.getTitle())
                     .priority(task.getPriority())
                     .dueDate(task.getDueDate())
+                    .dueTime(task.getDueTime())
+                    .reminderOffsets(parseReminderOffsets(task.getReminderOffsets()))
                     .isCompleted(task.getIsCompleted())
                     .isRecurring(task.getIsRecurring())
                     .projectId(task.getProject() != null ? task.getProject().getId() : null)

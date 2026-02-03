@@ -13,6 +13,7 @@ interface AuthState {
     signup: (data: SignupRequest) => Promise<void>;
     logout: () => void;
     checkTokenExpiry: () => boolean;
+    updateUser: (updates: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -73,6 +74,12 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 return true;
+            },
+
+            updateUser: (updates: Partial<User>) => {
+                set((state) => ({
+                    user: state.user ? { ...state.user, ...updates } : null,
+                }));
             },
         }),
         {

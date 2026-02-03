@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +49,12 @@ public class Task {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(name = "due_time")
+    private LocalTime dueTime;
+
+    @Column(name = "reminder_offsets")
+    private String reminderOffsets;
 
     @Column(name = "is_completed")
     @Builder.Default
@@ -104,6 +111,14 @@ public class Task {
 
     public void updateDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public void updateDueTime(LocalTime dueTime) {
+        this.dueTime = dueTime;
+    }
+
+    public void updateReminderOffsets(String reminderOffsets) {
+        this.reminderOffsets = reminderOffsets;
     }
 
     public void complete() {
