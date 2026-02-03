@@ -40,7 +40,7 @@ public class SecurityConfig {
             "http://127.0.0.1:8080"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "X-Requested-With"));
         config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("Authorization"));
 

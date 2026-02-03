@@ -14,7 +14,8 @@ import java.util.List;
 @Table(name = "tasks", indexes = {
     @Index(name = "idx_tasks_user_id", columnList = "user_id"),
     @Index(name = "idx_tasks_due_date", columnList = "due_date"),
-    @Index(name = "idx_tasks_is_completed", columnList = "is_completed")
+    @Index(name = "idx_tasks_is_completed", columnList = "is_completed"),
+    @Index(name = "idx_tasks_user_due_date", columnList = "user_id, due_date")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -77,6 +78,9 @@ public class Task {
     @OneToMany(mappedBy = "parentTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Task> childTasks = new ArrayList<>();
+
+    @Version
+    private Long version;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -71,12 +73,26 @@ public class ProjectService {
     }
 
     public List<ProjectDto.Response> getAllProjects(Long userId) {
-        return projectRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
+        List<Project> projects = projectRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        if (projects.isEmpty()) {
+            return List.of();
+        }
+
+        // N+1 방지: 한 번의 쿼리로 모든 프로젝트의 태스크 통계 조회
+        List<Long> projectIds = projects.stream().map(Project::getId).collect(Collectors.toList());
+        Map<Long, long[]> statsMap = new HashMap<>();
+        taskRepository.countTasksByProjectIds(projectIds).forEach(row -> {
+            Long projectId = (Long) row[0];
+            long taskCount = (Long) row[1];
+            long completedCount = (Long) row[2];
+            statsMap.put(projectId, new long[]{taskCount, completedCount});
+        });
+
+        return projects.stream()
                 .map(project -> {
-                    long taskCount = taskRepository.countByProjectId(project.getId());
-                    long completedCount = taskRepository.countByProjectIdAndIsCompleted(project.getId(), true);
-                    return ProjectDto.Response.from(project, taskCount, completedCount);
+                    long[] stats = statsMap.getOrDefault(project.getId(), new long[]{0, 0});
+                    return ProjectDto.Response.from(project, stats[0], stats[1]);
                 })
                 .collect(Collectors.toList());
     }
@@ -108,6 +124,10 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long userId, Long projectId) {
         Project project = getOwnedProject(userId, projectId);
+
+        // 프로젝트에 속한 태스크의 프로젝트 참조를 null로 설정 (태스크 보존)
+        taskRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
+                .forEach(task -> task.changeProject(null));
 
         projectRepository.delete(project);
         log.info("Project deleted: id={}", projectId);

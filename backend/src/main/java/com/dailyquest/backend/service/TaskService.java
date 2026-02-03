@@ -41,6 +41,7 @@ public class TaskService {
         }
 
         validateRecurringConfiguration(request.getIsRecurring(), request.getRecurrenceType());
+        validateRecurrenceInterval(request.getRecurrenceInterval());
 
         Task task = Task.builder()
                 .user(user)
@@ -162,6 +163,7 @@ public class TaskService {
 
         if (Boolean.TRUE.equals(request.getIsRecurring())) {
             validateRecurringConfiguration(true, request.getRecurrenceType());
+            validateRecurrenceInterval(request.getRecurrenceInterval());
             task.setRecurring(
                     request.getRecurrenceType(),
                     request.getRecurrenceInterval() != null ? request.getRecurrenceInterval() : 1,
@@ -178,6 +180,11 @@ public class TaskService {
     @Transactional
     public TaskDto.Response completeTask(Long userId, Long taskId) {
         Task task = getOwnedTask(userId, taskId);
+
+        // 이미 완료된 태스크면 중복 처리 방지
+        if (task.isTaskCompleted()) {
+            return TaskDto.Response.from(task);
+        }
 
         task.complete();
         log.info("Task completed: id={}", taskId);
@@ -261,6 +268,15 @@ public class TaskService {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT,
                     "recurrenceType is required when isRecurring is true"
+            );
+        }
+    }
+
+    private void validateRecurrenceInterval(Integer interval) {
+        if (interval != null && (interval < 1 || interval > 365)) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "recurrenceInterval must be between 1 and 365"
             );
         }
     }

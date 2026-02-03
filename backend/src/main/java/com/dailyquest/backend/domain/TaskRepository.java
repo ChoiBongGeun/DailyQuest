@@ -51,6 +51,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     long countByUserIdAndIsCompleted(Long userId, Boolean isCompleted);
     
     long countByProjectId(Long projectId);
-    
+
     long countByProjectIdAndIsCompleted(Long projectId, Boolean isCompleted);
+
+    /**
+     * 프로젝트별 태스크 수와 완료 태스크 수를 한 번의 쿼리로 조회 (N+1 방지)
+     */
+    @Query("SELECT t.project.id AS projectId, " +
+           "COUNT(t) AS taskCount, " +
+           "SUM(CASE WHEN t.isCompleted = true THEN 1 ELSE 0 END) AS completedCount " +
+           "FROM Task t WHERE t.project.id IN :projectIds GROUP BY t.project.id")
+    List<Object[]> countTasksByProjectIds(@Param("projectIds") List<Long> projectIds);
 }

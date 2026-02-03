@@ -8,10 +8,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dailyquest.backend.domain.Project;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,13 +53,26 @@ public class DashboardService {
                 .filter(t -> Boolean.TRUE.equals(t.getIsCompleted()))
                 .count();
 
-        List<DashboardDto.ProjectStats> projectStats = projectRepository.findByUserId(userId)
-                .stream()
+        // N+1 방지: 한 번의 쿼리로 모든 프로젝트의 태스크 통계 조회
+        List<Project> projects = projectRepository.findByUserId(userId);
+        Map<Long, long[]> statsMap = new HashMap<>();
+        if (!projects.isEmpty()) {
+            List<Long> projectIds = projects.stream().map(Project::getId).collect(Collectors.toList());
+            taskRepository.countTasksByProjectIds(projectIds).forEach(row -> {
+                Long projectId = (Long) row[0];
+                long tc = (Long) row[1];
+                long cc = (Long) row[2];
+                statsMap.put(projectId, new long[]{tc, cc});
+            });
+        }
+
+        List<DashboardDto.ProjectStats> projectStats = projects.stream()
                 .map(project -> {
-                    long taskCount = taskRepository.countByProjectId(project.getId());
-                    long completedCount = taskRepository.countByProjectIdAndIsCompleted(project.getId(), true);
-                    double rate = taskCount > 0 
-                            ? Math.round((double) completedCount / taskCount * 100 * 10) / 10.0 
+                    long[] stats = statsMap.getOrDefault(project.getId(), new long[]{0, 0});
+                    long taskCount = stats[0];
+                    long completedCount = stats[1];
+                    double rate = taskCount > 0
+                            ? Math.round((double) completedCount / taskCount * 100 * 10) / 10.0
                             : 0;
 
                     return DashboardDto.ProjectStats.builder()

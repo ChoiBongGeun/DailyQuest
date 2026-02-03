@@ -35,7 +35,7 @@ public class Project {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "project", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
