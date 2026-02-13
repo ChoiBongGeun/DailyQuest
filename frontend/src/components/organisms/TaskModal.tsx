@@ -131,6 +131,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
     }
   };
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const formatReminderOffset = (minutes: number) => {
@@ -170,10 +179,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-modal-title"
+      >
         <div className="w-full max-w-lg max-h-[92vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            <h2 id="task-modal-title" className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {editingTask ? t('task.editTask') : t('task.newTask')}
             </h2>
             <button
@@ -417,7 +431,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
                 fullWidth
                 isLoading={createTask.isPending || updateTask.isPending}
               >
-                {editingTask ? t('common.edit') : t('common.submit')}
+                {editingTask ? t('common.save') : t('common.submit')}
               </Button>
             </div>
           </form>

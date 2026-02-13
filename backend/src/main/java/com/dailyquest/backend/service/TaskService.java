@@ -7,12 +7,18 @@ import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -137,6 +143,49 @@ public class TaskService {
                 .stream()
                 .map(TaskDto.ListResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    public TaskDto.PageResponse searchTasks(
+            Long userId,
+            String scope,
+            String keyword,
+            Long projectId,
+            Priority priority,
+            Boolean isCompleted,
+            String sortBy,
+            String sortDir,
+            Integer page,
+            Integer size
+    ) {
+        int safePage = page == null || page < 0 ? 0 : page;
+        int safeSize = size == null || size < 1 ? 20 : Math.min(size, 100);
+
+        Pageable pageable = PageRequest.of(safePage, safeSize, buildSort(sortBy, sortDir));
+        Specification<Task> spec = buildSearchSpecification(
+                userId,
+                scope,
+                keyword,
+                projectId,
+                priority,
+                isCompleted
+        );
+
+        Page<Task> resultPage = taskRepository.findAll(spec, pageable);
+        List<TaskDto.ListResponse> content = resultPage
+                .getContent()
+                .stream()
+                .map(TaskDto.ListResponse::from)
+                .toList();
+
+        return TaskDto.PageResponse.builder()
+                .content(content)
+                .page(resultPage.getNumber())
+                .size(resultPage.getSize())
+                .totalElements(resultPage.getTotalElements())
+                .totalPages(resultPage.getTotalPages())
+                .hasNext(resultPage.hasNext())
+                .hasPrevious(resultPage.hasPrevious())
+                .build();
     }
 
     @Transactional
@@ -324,5 +373,87 @@ public class TaskService {
         }
 
         return task;
+    }
+
+    private Sort buildSort(String sortBy, String sortDir) {
+        String sortField = sortBy == null ? "createdAt" : sortBy;
+        boolean isDesc = sortDir == null || "desc".equalsIgnoreCase(sortDir);
+        Sort.Direction direction = isDesc ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        List<Sort.Order> orders = new ArrayList<>();
+        switch (sortField) {
+            case "dueDate" -> {
+                orders.add(new Sort.Order(direction, "dueDate"));
+                orders.add(new Sort.Order(direction, "dueTime"));
+                orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
+            }
+            case "priority" -> {
+                orders.add(new Sort.Order(direction, "priority"));
+                orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
+            }
+            case "title" -> {
+                orders.add(new Sort.Order(direction, "title"));
+                orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
+            }
+            case "updatedAt" -> {
+                orders.add(new Sort.Order(direction, "updatedAt"));
+                orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
+            }
+            default -> orders.add(new Sort.Order(direction, "createdAt"));
+        }
+        return Sort.by(orders);
+    }
+
+    private Specification<Task> buildSearchSpecification(
+            Long userId,
+            String scope,
+            String keyword,
+            Long projectId,
+            Priority priority,
+            Boolean isCompleted
+    ) {
+        return (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("user").get("id"), userId));
+
+            if (keyword != null && !keyword.isBlank()) {
+                String likeKeyword = "%" + keyword.trim().toLowerCase() + "%";
+                var projectJoin = root.join("project", jakarta.persistence.criteria.JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), likeKeyword),
+                        cb.like(cb.lower(cb.coalesce(root.get("description"), "")), likeKeyword),
+                        cb.like(cb.lower(cb.coalesce(projectJoin.get("name"), "")), likeKeyword)
+                ));
+            }
+
+            if (projectId != null) {
+                predicates.add(cb.equal(root.get("project").get("id"), projectId));
+            }
+
+            if (priority != null) {
+                predicates.add(cb.equal(root.get("priority"), priority));
+            }
+
+            if (isCompleted != null) {
+                predicates.add(cb.equal(root.get("isCompleted"), isCompleted));
+            }
+
+            String normalizedScope = scope == null ? "all" : scope.trim().toLowerCase();
+            if ("today".equals(normalizedScope)) {
+                predicates.add(cb.equal(root.get("dueDate"), LocalDate.now()));
+            } else if ("week".equals(normalizedScope)) {
+                LocalDate today = LocalDate.now();
+                LocalDate startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+                predicates.add(cb.between(root.get("dueDate"), startOfWeek, endOfWeek));
+            } else if ("overdue".equals(normalizedScope)) {
+                predicates.add(cb.lessThan(root.get("dueDate"), LocalDate.now()));
+                predicates.add(cb.isFalse(root.get("isCompleted")));
+            } else if ("projects".equals(normalizedScope) && projectId == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "projectId is required for projects scope");
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
     }
 }

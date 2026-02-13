@@ -26,6 +26,10 @@ jwt:
   secret: ${JWT_SECRET:dailyquest-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-security}
   expiration: ${JWT_EXPIRATION:86400000}
 
+cors:
+  allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*
+  allowed-headers: "*"
+
 # Swagger 설정
 springdoc:
   api-docs:

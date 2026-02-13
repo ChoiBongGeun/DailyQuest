@@ -1,69 +1,103 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Filter } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Search, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/organisms/Header';
 import { Sidebar, type DashboardView } from '@/components/organisms/Sidebar';
 import { StatsCard } from '@/components/molecules/StatsCard';
 import { TaskItem } from '@/components/molecules/TaskItem';
 import { TaskModal } from '@/components/organisms/TaskModal';
 import { ProjectModal } from '@/components/organisms/ProjectModal';
+import { ConfirmModal } from '@/components/molecules/ConfirmModal';
 import { Card } from '@/components/atoms/Card';
 import { Button } from '@/components/atoms/Button';
-import {
-  useTasks,
-  useTodayTasks,
-  useWeekTasks,
-  useTasksByProject,
-  useSetTaskComplete,
-  useDeleteTask,
-} from '@/hooks/use-tasks';
+import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
+import { useTaskSearch, useSetTaskComplete, useDeleteTask } from '@/hooks/use-tasks';
 import { useDashboardStats } from '@/hooks/use-dashboard';
-import { useProjects } from '@/hooks/use-projects';
+import { useDeleteProject, useProjects } from '@/hooks/use-projects';
 import { useTaskReminder } from '@/hooks/use-task-reminder';
 import { extractErrorMessage } from '@/lib/api/response';
-import type { Task } from '@/types';
+import type { Project, Task, TaskSearchScope } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 
-type TaskQueryResult = {
-  data: Task[] | undefined;
-  isLoading: boolean;
-  error: unknown;
-};
+type TaskStatusFilter = 'ALL' | 'ACTIVE' | 'COMPLETED';
+type TaskPriorityFilter = 'ALL' | 'HIGH' | 'MEDIUM' | 'LOW';
+type TaskSortOption = 'createdDesc' | 'dueDateAsc' | 'dueDateDesc' | 'priorityDesc' | 'titleAsc';
 
 export default function Page() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [currentView, setCurrentView] = React.useState<DashboardView>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = React.useState<number>();
   const [showTaskModal, setShowTaskModal] = React.useState(false);
   const [showProjectModal, setShowProjectModal] = React.useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
+  const [confirmModal, setConfirmModal] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [searchKeyword, setSearchKeyword] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<TaskStatusFilter>('ALL');
+  const [priorityFilter, setPriorityFilter] = React.useState<TaskPriorityFilter>('ALL');
+  const [sortOption, setSortOption] = React.useState<TaskSortOption>('createdDesc');
+  const [page, setPage] = React.useState(0);
+  const pageSize = 20;
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
   const { data: projects } = useProjects();
 
-  // Initialize task reminder scheduler
   useTaskReminder();
-
-  const allTasksQuery = useTasks();
-  const todayTasksQuery = useTodayTasks();
-  const weekTasksQuery = useWeekTasks();
-  const projectTasksQuery = useTasksByProject(selectedProjectId);
 
   const setTaskComplete = useSetTaskComplete();
   const deleteTask = useDeleteTask();
+  const deleteProject = useDeleteProject();
   const addToast = useUIStore((state) => state.addToast);
 
-  const activeTaskQuery: TaskQueryResult = React.useMemo(() => {
-    if (currentView === 'all' || currentView === 'dashboard') return allTasksQuery;
-    if (currentView === 'today') return todayTasksQuery;
-    if (currentView === 'week') return weekTasksQuery;
-    if (currentView === 'projects') return projectTasksQuery;
-    return allTasksQuery;
-  }, [currentView, allTasksQuery, todayTasksQuery, weekTasksQuery, projectTasksQuery]);
+  const scope: TaskSearchScope = React.useMemo(() => {
+    if (currentView === 'today') return 'today';
+    if (currentView === 'week') return 'week';
+    if (currentView === 'projects') return selectedProjectId ? 'projects' : 'all';
+    return 'all';
+  }, [currentView, selectedProjectId]);
+
+  const searchParams = React.useMemo(() => {
+    const isCompleted =
+      statusFilter === 'ALL' ? undefined : statusFilter === 'COMPLETED';
+
+    const sortMapping: Record<TaskSortOption, { sortBy: 'createdAt' | 'dueDate' | 'priority' | 'title'; sortDir: 'asc' | 'desc' }> = {
+      createdDesc: { sortBy: 'createdAt', sortDir: 'desc' },
+      dueDateAsc: { sortBy: 'dueDate', sortDir: 'asc' },
+      dueDateDesc: { sortBy: 'dueDate', sortDir: 'desc' },
+      priorityDesc: { sortBy: 'priority', sortDir: 'desc' },
+      titleAsc: { sortBy: 'title', sortDir: 'asc' },
+    };
+
+    return {
+      scope,
+      keyword: searchKeyword.trim() || undefined,
+      projectId: scope === 'projects' ? selectedProjectId : undefined,
+      priority: priorityFilter === 'ALL' ? undefined : priorityFilter,
+      isCompleted,
+      sortBy: sortMapping[sortOption].sortBy,
+      sortDir: sortMapping[sortOption].sortDir,
+      page,
+      size: pageSize,
+    };
+  }, [scope, searchKeyword, selectedProjectId, priorityFilter, statusFilter, sortOption, page]);
+
+  const searchQuery = useTaskSearch(searchParams);
+
+  React.useEffect(() => {
+    setPage(0);
+  }, [scope, selectedProjectId, searchKeyword, statusFilter, priorityFilter, sortOption]);
 
   const handleToggle = async (task: Task) => {
     try {
@@ -76,15 +110,22 @@ export default function Page() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-
-    try {
-      await deleteTask.mutateAsync(id);
-      addToast(t('success.taskDeleted'), 'success');
-    } catch (error) {
-      addToast(extractErrorMessage(error, t('error.generic')), 'error');
-    }
+  const handleDelete = (id: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: t('task.deleteTask'),
+      message: t('task.deleteConfirm'),
+      onConfirm: async () => {
+        try {
+          await deleteTask.mutateAsync(id);
+          addToast(t('success.taskDeleted'), 'success');
+        } catch (error) {
+          addToast(extractErrorMessage(error, t('error.generic')), 'error');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const openCreateModal = () => {
@@ -95,6 +136,38 @@ export default function Page() {
   const openEditModal = (task: Task) => {
     setEditingTask(task);
     setShowTaskModal(true);
+  };
+
+  const openCreateProjectModal = () => {
+    setEditingProject(null);
+    setShowProjectModal(true);
+  };
+
+  const openEditProjectModal = (project: Project) => {
+    setEditingProject(project);
+    setShowProjectModal(true);
+  };
+
+  const handleDeleteProject = (project: Project) => {
+    setConfirmModal({
+      isOpen: true,
+      title: t('project.deleteProject'),
+      message: t('project.deleteProjectConfirm', { name: project.name }),
+      onConfirm: async () => {
+        try {
+          await deleteProject.mutateAsync(project.id);
+          addToast(t('success.projectDeleted'), 'success');
+          if (selectedProjectId === project.id) {
+            setSelectedProjectId(undefined);
+            setCurrentView('all');
+          }
+        } catch (error) {
+          addToast(extractErrorMessage(error, t('error.generic')), 'error');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleSelectProject = (projectId: number) => {
@@ -117,7 +190,30 @@ export default function Page() {
     }
   };
 
-  const tasks = activeTaskQuery.data || [];
+  const tasks = searchQuery.data?.content || [];
+  const totalElements = searchQuery.data?.totalElements || 0;
+  const totalPages = searchQuery.data?.totalPages || 0;
+
+  const statusFilterOptions = [
+    { value: 'ALL', label: t('task.filterStatusAll') },
+    { value: 'ACTIVE', label: t('task.filterStatusActive') },
+    { value: 'COMPLETED', label: t('task.filterStatusCompleted') },
+  ];
+
+  const priorityFilterOptions = [
+    { value: 'ALL', label: t('common.all') },
+    { value: 'HIGH', label: t('task.high') },
+    { value: 'MEDIUM', label: t('task.medium') },
+    { value: 'LOW', label: t('task.low') },
+  ];
+
+  const sortOptions = [
+    { value: 'createdDesc', label: t('task.sortCreatedDesc') },
+    { value: 'dueDateAsc', label: t('task.sortDueDateAsc') },
+    { value: 'dueDateDesc', label: t('task.sortDueDateDesc') },
+    { value: 'priorityDesc', label: t('task.sortPriorityDesc') },
+    { value: 'titleAsc', label: t('task.sortTitleAsc') },
+  ];
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
@@ -140,10 +236,13 @@ export default function Page() {
             currentView={currentView}
             selectedProjectId={selectedProjectId}
             projects={projects}
+            stats={stats ? { todayTasks: stats.todayTasks, weekTasks: stats.weekTasks } : undefined}
             onViewChange={setCurrentView}
             onSelectProject={handleSelectProject}
             onNewTask={openCreateModal}
-            onNewProject={() => setShowProjectModal(true)}
+            onNewProject={openCreateProjectModal}
+            onEditProject={openEditProjectModal}
+            onDeleteProject={handleDeleteProject}
             isMobile
             onNavigate={() => setIsMobileSidebarOpen(false)}
           />
@@ -154,10 +253,13 @@ export default function Page() {
             currentView={currentView}
             selectedProjectId={selectedProjectId}
             projects={projects}
+            stats={stats ? { todayTasks: stats.todayTasks, weekTasks: stats.weekTasks } : undefined}
             onViewChange={setCurrentView}
             onSelectProject={handleSelectProject}
             onNewTask={openCreateModal}
-            onNewProject={() => setShowProjectModal(true)}
+            onNewProject={openCreateProjectModal}
+            onEditProject={openEditProjectModal}
+            onDeleteProject={handleDeleteProject}
           />
         </div>
 
@@ -166,12 +268,14 @@ export default function Page() {
             <div className="mb-8">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <h1 className="heading-2 text-neutral-900 dark:text-neutral-100">{t('dashboard.title')}</h1>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="lg:hidden px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  className="lg:hidden"
                 >
-                  메뉴
-                </button>
+                  {t('common.menu')}
+                </Button>
               </div>
               <p className="text-neutral-600 dark:text-neutral-400">{t('dashboard.welcome')} 🚀</p>
             </div>
@@ -183,9 +287,12 @@ export default function Page() {
                 ))}
               </div>
             ) : statsError ? (
-              <div className="bg-error-light dark:bg-error/20 border border-error/20 text-error dark:text-error-light p-4 rounded-lg mb-8">
-                {t('error.generic')}
-              </div>
+              <Card padding="lg" className="border-error/20 mb-8">
+                <div className="text-center py-4">
+                  <AlertCircle className="w-10 h-10 text-error mx-auto mb-3" />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('error.generic')}</p>
+                </div>
+              </Card>
             ) : stats ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatsCard title={t('dashboard.completed')} value={stats.completedTasks} icon={CheckCircle2} color="success" />
@@ -199,9 +306,15 @@ export default function Page() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h2 className="heading-3 text-neutral-900 dark:text-neutral-100">{getTaskTitle()}</h2>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <Button variant="outline" size="sm" leftIcon={<Filter className="w-4 h-4" />} disabled>
-                    {t('common.filter')}
-                  </Button>
+                  {currentView === 'projects' && selectedProjectId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/projects/${selectedProjectId}`)}
+                    >
+                      {t('project.viewDetail')}
+                    </Button>
+                  )}
                   <Button
                     variant="primary"
                     size="sm"
@@ -213,13 +326,52 @@ export default function Page() {
                 </div>
               </div>
 
-              {activeTaskQuery.isLoading ? (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+                <Input
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder={t('task.searchPlaceholder')}
+                  leftIcon={<Search className="w-4 h-4" />}
+                  rightIcon={
+                    searchKeyword ? (
+                      <button
+                        onClick={() => setSearchKeyword('')}
+                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                        aria-label={t('common.clear')}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    ) : undefined
+                  }
+                  fullWidth
+                  className="lg:col-span-2"
+                />
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as TaskStatusFilter)}
+                  options={statusFilterOptions}
+                />
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
+                  <Select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value as TaskPriorityFilter)}
+                    options={priorityFilterOptions}
+                  />
+                  <Select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value as TaskSortOption)}
+                    options={sortOptions}
+                  />
+                </div>
+              </div>
+
+              {searchQuery.isLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="skeleton h-24 rounded-lg" />
                   ))}
                 </div>
-              ) : activeTaskQuery.error ? (
+              ) : searchQuery.error ? (
                 <Card padding="lg" className="border-error/20">
                   <div className="text-center py-8">
                     <AlertCircle className="w-12 h-12 text-error mx-auto mb-4" />
@@ -247,7 +399,9 @@ export default function Page() {
                       <CheckCircle2 className="w-8 h-8 text-primary-600 dark:text-primary-400" />
                     </div>
                     <h3 className="heading-4 text-neutral-900 dark:text-neutral-100 mb-2">{t('task.noTasks')}</h3>
-                    <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('task.noTasksDesc')}</p>
+                    <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                      {(searchKeyword || statusFilter !== 'ALL' || priorityFilter !== 'ALL') ? t('task.noFilteredTasks') : t('task.noTasksDesc')}
+                    </p>
                     <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateModal}>
                       {t('task.addTask')}
                     </Button>
@@ -255,36 +409,114 @@ export default function Page() {
                 </Card>
               )}
 
-              {stats && (
-                <Card>
-                  <h3 className="heading-4 text-neutral-900 dark:text-neutral-100 mb-4">{t('dashboard.weekSummary')}</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-700 dark:text-neutral-300">{t('dashboard.totalTasks')}</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">{stats.weekTasks}개</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-700 dark:text-neutral-300">{t('dashboard.completionRate')}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-primary rounded-full transition-all"
-                            style={{ width: `${stats.completionRate}%` }}
-                          />
-                        </div>
-                        <span className="font-semibold text-primary-600 dark:text-primary-400">
-                          {stats.completionRate}%
-                        </span>
-                      </div>
+              {totalElements > 0 && totalPages > 1 && (() => {
+                const getPageNumbers = (current: number, total: number): (number | '...')[] => {
+                  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+                  const pages: (number | '...')[] = [];
+                  const left = Math.max(1, current - 1);
+                  const right = Math.min(total - 2, current + 1);
+                  pages.push(0);
+                  if (left > 1) pages.push('...');
+                  for (let i = left; i <= right; i++) pages.push(i);
+                  if (right < total - 2) pages.push('...');
+                  pages.push(total - 1);
+                  return pages;
+                };
+                const pageNumbers = getPageNumbers(page, totalPages);
+                return (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('task.paginationSummary', {
+                        current: page + 1,
+                        total: Math.max(totalPages, 1),
+                        totalElements,
+                      })}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+                        disabled={!searchQuery.data?.hasPrevious}
+                      >
+                        {t('common.previous')}
+                      </Button>
+                      {pageNumbers.map((p, idx) =>
+                        p === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="px-1 text-neutral-400 dark:text-neutral-500 text-sm select-none">
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            aria-current={p === page ? 'page' : undefined}
+                            className={cn(
+                              'min-w-[2rem] h-8 px-2 rounded-lg text-sm font-medium transition-colors',
+                              p === page
+                                ? 'bg-primary-600 text-white'
+                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                            )}
+                          >
+                            {p + 1}
+                          </button>
+                        )
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((prev) => prev + 1)}
+                        disabled={!searchQuery.data?.hasNext}
+                      >
+                        {t('common.next')}
+                      </Button>
                     </div>
                   </div>
-                </Card>
-              )}
+                );
+              })()}
+
+              {stats && (() => {
+                const weekCompletionRate = stats.weekTasks > 0
+                  ? Math.round((stats.weekCompleted / stats.weekTasks) * 100)
+                  : 0;
+                return (
+                  <Card>
+                    <h3 className="heading-4 text-neutral-900 dark:text-neutral-100 mb-4">{t('dashboard.weekSummary')}</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-700 dark:text-neutral-300">{t('dashboard.totalTasks')}</span>
+                        <span className="font-semibold text-neutral-900 dark:text-neutral-100">{t('dashboard.weekTaskCount', { count: stats.weekTasks })}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-700 dark:text-neutral-300">{t('dashboard.completionRate')}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-primary rounded-full transition-all"
+                              style={{ width: `${weekCompletionRate}%` }}
+                            />
+                          </div>
+                          <span className="font-semibold text-primary-600 dark:text-primary-400">
+                            {weekCompletionRate}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
             </div>
           </div>
         </main>
       </div>
 
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
       <TaskModal
         isOpen={showTaskModal}
         onClose={() => {
@@ -295,8 +527,13 @@ export default function Page() {
       />
       <ProjectModal
         isOpen={showProjectModal}
-        onClose={() => setShowProjectModal(false)}
+        onClose={() => {
+          setShowProjectModal(false);
+          setEditingProject(null);
+        }}
+        editingProject={editingProject}
         onCreated={() => setCurrentView('projects')}
+        onUpdated={() => setCurrentView('projects')}
       />
     </div>
   );

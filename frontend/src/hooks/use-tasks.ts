@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskApi } from '@/lib/api/task';
-import type { TaskCreateRequest, TaskUpdateRequest } from '@/types';
+import type { TaskCreateRequest, TaskSearchParams, TaskUpdateRequest } from '@/types';
 
 const TASK_KEYS = {
   all: ['tasks'] as const,
@@ -10,6 +10,7 @@ const TASK_KEYS = {
   week: () => [...TASK_KEYS.all, 'week'] as const,
   overdue: () => [...TASK_KEYS.all, 'overdue'] as const,
   byProject: (projectId: number) => [...TASK_KEYS.all, 'project', projectId] as const,
+  search: (params: TaskSearchParams) => [...TASK_KEYS.all, 'search', params] as const,
 };
 
 export const useTasks = () =>
@@ -48,6 +49,12 @@ export const useTasksByProject = (projectId?: number) =>
     queryKey: TASK_KEYS.byProject(projectId || 0),
     queryFn: () => taskApi.getByProject(projectId as number),
     enabled: !!projectId,
+  });
+
+export const useTaskSearch = (params: TaskSearchParams) =>
+  useQuery({
+    queryKey: TASK_KEYS.search(params),
+    queryFn: () => taskApi.search(params),
   });
 
 export const useCreateTask = () => {

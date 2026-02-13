@@ -1,5 +1,5 @@
 import axiosInstance from '../api-client';
-import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types';
+import type { PageResult, Task, TaskCreateRequest, TaskSearchParams, TaskUpdateRequest } from '@/types';
 import { unwrapApiResponse } from './response';
 
 const mapTask = (task: Task): Task => task;
@@ -59,5 +59,14 @@ export const taskApi = {
   getByPriority: async (priority: string): Promise<Task[]> => {
     const response = await axiosInstance.get(`/api/tasks/priority/${priority}`);
     return unwrapApiResponse<Task[]>(response).map(mapTask);
+  },
+
+  search: async (params: TaskSearchParams): Promise<PageResult<Task>> => {
+    const response = await axiosInstance.get('/api/tasks/search', { params });
+    const page = unwrapApiResponse<PageResult<Task>>(response);
+    return {
+      ...page,
+      content: page.content.map(mapTask),
+    };
   },
 };

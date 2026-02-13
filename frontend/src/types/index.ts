@@ -144,3 +144,29 @@ export interface SortOptions {
   field: 'dueDate' | 'priority' | 'createdAt' | 'title';
   order: 'asc' | 'desc';
 }
+
+export type TaskSearchScope = 'all' | 'today' | 'week' | 'projects' | 'overdue';
+export type TaskSortBy = 'createdAt' | 'dueDate' | 'priority' | 'title' | 'updatedAt';
+export type TaskSortDir = 'asc' | 'desc';
+
+export interface TaskSearchParams {
+  scope?: TaskSearchScope;
+  keyword?: string;
+  projectId?: number;
+  priority?: Priority;
+  isCompleted?: boolean;
+  sortBy?: TaskSortBy;
+  sortDir?: TaskSortDir;
+  page?: number;
+  size?: number;
+}
+
+export interface PageResult<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
