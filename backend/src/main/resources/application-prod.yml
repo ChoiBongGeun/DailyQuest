@@ -1,0 +1,17 @@
+# 프로덕션 환경 설정
+# 실행: --spring.profiles.active=prod
+# 필수 환경변수: FRONTEND_URL, DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+cors:
+  allowed-origin-patterns: ${FRONTEND_URL}
+  allowed-headers: Content-Type,Authorization,Accept
+
+logging:
+  level:
+    com.dailyquest: INFO

@@ -3,6 +3,7 @@ package com.dailyquest.backend.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
@@ -46,6 +47,9 @@ public class Task {
     @Column(length = 20)
     @Builder.Default
     private Priority priority = Priority.MEDIUM;
+
+    @Formula("CASE priority WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END")
+    private Integer priorityRank;
 
     @Column(name = "due_date")
     private LocalDate dueDate;

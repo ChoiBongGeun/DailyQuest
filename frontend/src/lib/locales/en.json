@@ -16,10 +16,16 @@
     "filter": "Filter",
     "sort": "Sort",
     "all": "All",
+    "previous": "Previous",
+    "next": "Next",
+    "back": "Back",
     "today": "Today",
     "week": "This Week",
     "month": "This Month",
-    "year": "This Year"
+    "year": "This Year",
+    "menu": "Menu",
+    "clear": "Clear",
+    "more": "More options"
   },
   "auth": {
     "login": "Log In",
@@ -113,6 +119,7 @@
     "addTask": "Add Task",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
+    "deleteConfirm": "Are you sure you want to delete this task?",
     "completeTask": "Complete",
     "taskTitle": "Title",
     "taskDescription": "Description",
@@ -139,7 +146,28 @@
     "weekTasks": "This Week's Tasks",
     "overdueTasks": "Overdue Tasks",
     "completedTasks": "Completed Tasks",
-    "pendingTasks": "Pending"
+    "pendingTasks": "Pending",
+    "searchPlaceholder": "Search tasks...",
+    "noFilteredTasks": "No tasks match the current filters",
+    "filterStatusAll": "All Status",
+    "filterStatusActive": "Active",
+    "filterStatusCompleted": "Completed",
+    "sortCreatedDesc": "Newest first",
+    "sortDueDateAsc": "Due date: earliest",
+    "sortDueDateDesc": "Due date: latest",
+    "sortPriorityDesc": "Priority: high to low",
+    "sortTitleAsc": "Title: A-Z",
+    "paginationSummary": "Page {{current}} / {{total}} · {{totalElements}} tasks",
+    "selectedCount": "{{count}} selected",
+    "bulkComplete": "Complete Selected",
+    "bulkDelete": "Delete Selected",
+    "bulkCompleteSuccess": "{{count}} tasks marked complete",
+    "bulkDeleteSuccess": "{{count}} tasks deleted",
+    "bulkDeleteConfirm": "Delete {{count}} selected tasks?",
+    "trend7days": "Last 7 Days Trend",
+    "created": "Created",
+    "completed": "Completed",
+    "noneInProject": "No tasks to show in this project"
   },
   "project": {
     "title": "Projects",
@@ -150,6 +178,9 @@
     "projectName": "Project Name",
     "projectColor": "Color",
     "noProjects": "No projects",
+    "detailTitle": "Project Detail",
+    "viewDetail": "View Detail",
+    "deleteProjectConfirm": "Delete project \"{{name}}\"?",
     "personal": "Personal",
     "work": "Work"
   },
@@ -163,7 +194,7 @@
     "overdue": "Overdue",
     "completionRate": "Completion Rate",
     "weekSummary": "Weekly Summary",
-    "trend": "vs last week"
+    "weekTaskCount": "{{count}}"
   },
   "landing": {
     "hero": {

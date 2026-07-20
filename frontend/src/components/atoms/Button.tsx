@@ -56,18 +56,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         {...props}
       >
-        {isLoading ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>처리 중...</span>
-          </>
-        ) : (
-          <>
-            {leftIcon && <span className="inline-flex">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="inline-flex">{rightIcon}</span>}
-          </>
+        {isLoading && (
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
         )}
+        {!isLoading && leftIcon && <span className="inline-flex">{leftIcon}</span>}
+        {children}
+        {!isLoading && rightIcon && <span className="inline-flex">{rightIcon}</span>}
       </button>
     );
   }

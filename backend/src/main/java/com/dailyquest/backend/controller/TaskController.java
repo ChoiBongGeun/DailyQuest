@@ -54,6 +54,35 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @Operation(summary = "Search tasks", description = "Search tasks with server-side filters, sorting, and pagination")
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<TaskDto.PageResponse>> searchTasks(
+            @RequestParam(defaultValue = "all") String scope,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) Priority priority,
+            @RequestParam(required = false) Boolean isCompleted,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        TaskDto.PageResponse response = taskService.searchTasks(
+                userId,
+                scope,
+                keyword,
+                projectId,
+                priority,
+                isCompleted,
+                sortBy,
+                sortDir,
+                page,
+                size
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @Operation(summary = "Get pending tasks", description = "Get incomplete tasks")
     @GetMapping("/pending")
     public ResponseEntity<ApiResponse<List<TaskDto.ListResponse>>> getPendingTasks() {

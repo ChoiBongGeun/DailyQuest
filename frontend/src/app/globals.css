@@ -71,14 +71,20 @@
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-tertiary: #334155;
-  
+
   /* Text Colors */
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
-  
+
   /* Border */
   --border-color: #334155;
+}
+
+/* Select option dark mode — OS-native option elements don't inherit Tailwind dark classes */
+.dark select option {
+  background-color: #171717;
+  color: #f5f5f5;
 }
 
 /* ========================================

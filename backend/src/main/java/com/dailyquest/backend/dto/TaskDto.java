@@ -159,30 +159,52 @@ public class TaskDto {
     public static class ListResponse {
         private Long id;
         private String title;
+        private String description;
         private Priority priority;
         private LocalDate dueDate;
         private LocalTime dueTime;
         private List<Integer> reminderOffsets;
         private Boolean isCompleted;
+        private LocalDateTime completedAt;
         private Boolean isRecurring;
         private Long projectId;
         private String projectName;
         private String projectColor;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
 
         public static ListResponse from(Task task) {
             return ListResponse.builder()
                     .id(task.getId())
                     .title(task.getTitle())
+                    .description(task.getDescription())
                     .priority(task.getPriority())
                     .dueDate(task.getDueDate())
                     .dueTime(task.getDueTime())
                     .reminderOffsets(parseReminderOffsets(task.getReminderOffsets()))
                     .isCompleted(task.getIsCompleted())
+                    .completedAt(task.getCompletedAt())
                     .isRecurring(task.getIsRecurring())
                     .projectId(task.getProject() != null ? task.getProject().getId() : null)
                     .projectName(task.getProject() != null ? task.getProject().getName() : null)
                     .projectColor(task.getProject() != null ? task.getProject().getColor() : null)
+                    .createdAt(task.getCreatedAt())
+                    .updatedAt(task.getUpdatedAt())
                     .build();
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PageResponse {
+        private List<ListResponse> content;
+        private Integer page;
+        private Integer size;
+        private Long totalElements;
+        private Integer totalPages;
+        private Boolean hasNext;
+        private Boolean hasPrevious;
     }
 }
