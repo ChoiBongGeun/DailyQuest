@@ -28,7 +28,10 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     
     List<Task> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 
-    List<Task> findByProjectIdAndUserIdOrderByCreatedAtDesc(Long projectId, Long userId);
+    @Query("SELECT t FROM Task t WHERE t.project.id = :projectId AND t.user.id = :userId " +
+           "ORDER BY CASE WHEN t.sortOrder IS NULL THEN 1 ELSE 0 END, t.sortOrder ASC, t.createdAt DESC")
+    List<Task> findByProjectIdAndUserIdOrderBySortOrder(
+        @Param("projectId") Long projectId, @Param("userId") Long userId);
     
     List<Task> findByProjectIdAndIsCompleted(Long projectId, Boolean isCompleted);
     

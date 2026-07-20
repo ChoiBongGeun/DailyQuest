@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Clock3, ListChecks, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, GripVertical, ListChecks, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { Header } from '@/components/organisms/Header';
 import { Card } from '@/components/atoms/Card';
 import { Button } from '@/components/atoms/Button';
@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/atoms/Checkbox';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { PROJECT_KEYS, useProject, useProjectStats } from '@/hooks/use-projects';
-import { useDeleteTask, useSetTaskComplete, useTasksByProject } from '@/hooks/use-tasks';
+import { useDeleteTask, useReorderProjectTasks, useSetTaskComplete, useTasksByProject } from '@/hooks/use-tasks';
 import { useQueryClient } from '@tanstack/react-query';
 import { TaskModal } from '@/components/organisms/TaskModal';
 import { ConfirmModal } from '@/components/molecules/ConfirmModal';
@@ -20,8 +20,86 @@ import { extractErrorMessage } from '@/lib/api/response';
 import { getPriorityLabel } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
+import {
+  DndContext, DragEndEvent, KeyboardSensor, PointerSensor,
+  closestCenter, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable,
+  verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'COMPLETED';
+
+function SortableTaskRow({
+  task,
+  selected,
+  onToggleSelect,
+  onEdit,
+  onDelete,
+  t,
+}: {
+  task: Task;
+  selected: boolean;
+  onToggleSelect: (checked: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  t: (key: string) => string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing touch-none text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
+        aria-label="드래그하여 순서 변경"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <Checkbox checked={selected} onChange={(e) => onToggleSelect(e.target.checked)} />
+      <div className="flex-1 min-w-0">
+        <p className={cn('text-sm font-medium text-neutral-900 dark:text-neutral-100', task.isCompleted && 'line-through opacity-60')}>
+          {task.title}
+        </p>
+        {task.description && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{task.description}</p>
+        )}
+      </div>
+      <span className="text-xs text-neutral-500 dark:text-neutral-400">{getPriorityLabel(task.priority)}</span>
+      <span className="text-xs text-neutral-500 dark:text-neutral-400 hidden sm:block">{task.dueDate || '-'}</span>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onEdit}
+          className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+          aria-label={t('common.edit')}
+        >
+          <Pencil className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-300" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1.5 rounded-lg hover:bg-error/10 transition-colors"
+          aria-label={t('common.delete')}
+        >
+          <Trash2 className="w-3.5 h-3.5 text-error" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectDetailPage() {
   const { t } = useTranslation();
@@ -45,7 +123,44 @@ export default function ProjectDetailPage() {
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasksByProject(projectId);
   const setTaskComplete = useSetTaskComplete();
   const deleteTask = useDeleteTask();
+  const reorderTasks = useReorderProjectTasks(projectId);
   const addToast = useUIStore((s) => s.addToast);
+
+  const [orderedTaskIds, setOrderedTaskIds] = React.useState<number[]>([]);
+  const reorderDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    if (tasks) setOrderedTaskIds(tasks.map((t) => t.id));
+  }, [tasks]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setOrderedTaskIds((prev) => {
+      const oldIndex = prev.indexOf(active.id as number);
+      const newIndex = prev.indexOf(over.id as number);
+      const next = arrayMove(prev, oldIndex, newIndex);
+      const snapshot = prev;
+
+      if (reorderDebounceRef.current) clearTimeout(reorderDebounceRef.current);
+      reorderDebounceRef.current = setTimeout(() => {
+        reorderTasks.mutate(next, {
+          onError: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks', 'project', projectId] });
+            addToast(t('error.generic'), 'error');
+          },
+        });
+      }, 500);
+
+      return next;
+    });
+  };
 
   const refreshStats = () =>
     queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.stats(projectId) });
@@ -54,7 +169,7 @@ export default function ProjectDetailPage() {
 
   const filteredTasks = React.useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
-    return safeTasks.filter((task) => {
+    const filtered = safeTasks.filter((task) => {
       const matchesKeyword =
         !keyword ||
         task.title.toLowerCase().includes(keyword) ||
@@ -64,7 +179,19 @@ export default function ProjectDetailPage() {
         (statusFilter === 'ACTIVE' ? !task.isCompleted : task.isCompleted);
       return matchesKeyword && matchesStatus;
     });
-  }, [safeTasks, searchKeyword, statusFilter]);
+
+    // 드래그로 변경된 순서 반영
+    if (orderedTaskIds.length > 0) {
+      filtered.sort((a, b) => {
+        const ai = orderedTaskIds.indexOf(a.id);
+        const bi = orderedTaskIds.indexOf(b.id);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+    }
+    return filtered;
+  }, [safeTasks, searchKeyword, statusFilter, orderedTaskIds]);
+
+  const isFiltered = statusFilter !== 'ALL' || searchKeyword.trim() !== '';
 
   const allVisibleSelected =
     filteredTasks.length > 0 &&
@@ -179,7 +306,7 @@ export default function ProjectDetailPage() {
     { value: 'COMPLETED', label: t('task.filterStatusCompleted') },
   ];
 
-  if (!projectId || Number.isNaN(projectId)) {
+  if (!projectId || Number.isNaN(projectId) || projectId <= 0) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
         <Header />
@@ -314,48 +441,26 @@ export default function ProjectDetailPage() {
             ) : filteredTasks.length === 0 ? (
               <div className="text-sm text-neutral-600 dark:text-neutral-400">{t('task.noneInProject')}</div>
             ) : (
-              <div className="space-y-2">
-                <div className="px-2 py-1 border-b border-neutral-200 dark:border-neutral-800">
-                  <Checkbox checked={allVisibleSelected} onChange={(e) => toggleSelectAllVisible(e.target.checked)} label={t('common.all')} />
-                </div>
-                {filteredTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
-                  >
-                    <Checkbox
-                      checked={selectedTaskIds.has(task.id)}
-                      onChange={(e) => toggleTaskSelection(task.id, e.target.checked)}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className={cn('text-sm font-medium text-neutral-900 dark:text-neutral-100', task.isCompleted && 'line-through opacity-60')}>
-                        {task.title}
-                      </p>
-                      {task.description && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{task.description}</p>
-                      )}
+              <DndContext sensors={isFiltered ? [] : sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    <div className="px-2 py-1 border-b border-neutral-200 dark:border-neutral-800">
+                      <Checkbox checked={allVisibleSelected} onChange={(e) => toggleSelectAllVisible(e.target.checked)} label={t('common.all')} />
                     </div>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{getPriorityLabel(task.priority)}</span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400 hidden sm:block">{task.dueDate || '-'}</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => { setEditingTask(task); setShowTaskModal(true); }}
-                        className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                        aria-label={t('common.edit')}
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-300" />
-                      </button>
-                      <button
-                        onClick={() => setConfirmModal({ isOpen: true, taskId: task.id })}
-                        className="p-1.5 rounded-lg hover:bg-error/10 transition-colors"
-                        aria-label={t('common.delete')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-error" />
-                      </button>
-                    </div>
+                    {filteredTasks.map((task) => (
+                      <SortableTaskRow
+                        key={task.id}
+                        task={task}
+                        selected={selectedTaskIds.has(task.id)}
+                        onToggleSelect={(checked) => toggleTaskSelection(task.id, checked)}
+                        onEdit={() => { setEditingTask(task); setShowTaskModal(true); }}
+                        onDelete={() => setConfirmModal({ isOpen: true, taskId: task.id })}
+                        t={t}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
           </Card>
         </div>

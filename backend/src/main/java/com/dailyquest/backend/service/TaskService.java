@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class TaskService {
 
+    private static final int MIN_RECURRENCE_INTERVAL = 1;
+    private static final int MAX_RECURRENCE_INTERVAL = 365;
+
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
@@ -124,10 +127,34 @@ public class TaskService {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
-        return taskRepository.findByProjectIdAndUserIdOrderByCreatedAtDesc(projectId, userId)
+        return taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId)
                 .stream()
                 .map(TaskDto.ListResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void reorderProjectTasks(Long userId, Long projectId, List<Long> taskIds) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        List<Task> tasks = taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId);
+        java.util.Map<Long, Task> taskMap = tasks.stream()
+                .collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
+
+        java.util.Set<Long> projectTaskIds = taskMap.keySet();
+        if (taskIds == null || taskIds.size() != projectTaskIds.size()
+                || !new java.util.HashSet<>(taskIds).equals(projectTaskIds)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "taskIds must be an exact permutation of the project's tasks");
+        }
+
+        for (int i = 0; i < taskIds.size(); i++) {
+            taskMap.get(taskIds.get(i)).updateSortOrder(i);
+        }
     }
 
     public List<TaskDto.ListResponse> getTasksByPriority(Long userId, Priority priority) {
@@ -221,7 +248,11 @@ public class TaskService {
             if (!project.getUser().getId().equals(userId)) {
                 throw new BusinessException(ErrorCode.NO_PERMISSION);
             }
-            task.changeProject(project);
+            Long currentProjectId = task.getProject() != null ? task.getProject().getId() : null;
+            if (!request.getProjectId().equals(currentProjectId)) {
+                task.changeProject(project);
+                task.updateSortOrder(null);
+            }
         }
 
         if (Boolean.TRUE.equals(request.getIsRecurring())) {
@@ -338,7 +369,7 @@ public class TaskService {
     }
 
     private void validateRecurrenceInterval(Integer interval) {
-        if (interval != null && (interval < 1 || interval > 365)) {
+        if (interval != null && (interval < MIN_RECURRENCE_INTERVAL || interval > MAX_RECURRENCE_INTERVAL)) {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT,
                     "recurrenceInterval must be between 1 and 365"

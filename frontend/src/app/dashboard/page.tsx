@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Search, X, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Search, X, Trash2, ListChecks } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/organisms/Header';
 import { Sidebar, type DashboardView } from '@/components/organisms/Sidebar';
@@ -49,6 +49,7 @@ export default function Page() {
   const [priorityFilter, setPriorityFilter] = React.useState<TaskPriorityFilter>('ALL');
   const [sortOption, setSortOption] = React.useState<TaskSortOption>('createdDesc');
   const [page, setPage] = React.useState(0);
+  const [isSelectionMode, setIsSelectionMode] = React.useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<number>>(new Set());
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const pageSize = 20;
@@ -232,6 +233,7 @@ export default function Page() {
       }
 
       if (event.key === 'Escape') {
+        setIsSelectionMode(false);
         setSelectedTaskIds(new Set());
       }
     };
@@ -250,6 +252,15 @@ export default function Page() {
       }
       return next;
     });
+  };
+
+  const enterSelectionMode = () => {
+    setIsSelectionMode(true);
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedTaskIds(new Set());
   };
 
   const handleSelectAllVisible = () => {
@@ -278,7 +289,7 @@ export default function Page() {
         )
       );
       addToast(t('task.bulkCompleteSuccess', { count: targets.length }), 'success');
-      setSelectedTaskIds(new Set());
+      exitSelectionMode();
     } catch (error) {
       addToast(extractErrorMessage(error, t('error.generic')), 'error');
     }
@@ -295,7 +306,7 @@ export default function Page() {
         try {
           await Promise.all([...selectedTaskIds].map((id) => deleteTask.mutateAsync(id)));
           addToast(t('task.bulkDeleteSuccess', { count: selectedCount }), 'success');
-          setSelectedTaskIds(new Set());
+          exitSelectionMode();
         } catch (error) {
           addToast(extractErrorMessage(error, t('error.generic')), 'error');
         } finally {
@@ -426,6 +437,16 @@ export default function Page() {
                       {t('project.viewDetail')}
                     </Button>
                   )}
+                  {tasks.length > 0 && (
+                    <Button
+                      variant={isSelectionMode ? 'secondary' : 'outline'}
+                      size="sm"
+                      leftIcon={<ListChecks className="w-4 h-4" />}
+                      onClick={isSelectionMode ? exitSelectionMode : enterSelectionMode}
+                    >
+                      {isSelectionMode ? t('common.cancel') : t('task.selectTask')}
+                    </Button>
+                  )}
                   <Button
                     variant="primary"
                     size="sm"
@@ -477,7 +498,7 @@ export default function Page() {
                 </div>
               </div>
 
-              {tasks.length > 0 && (
+              {tasks.length > 0 && isSelectionMode && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2">
                   <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                     <input
@@ -537,7 +558,7 @@ export default function Page() {
                       onEdit={openEditModal}
                       onDelete={handleDelete}
                       isSelected={selectedTaskIds.has(task.id)}
-                      onSelect={handleSelectTask}
+                      onSelect={isSelectionMode ? handleSelectTask : undefined}
                     />
                   ))}
                 </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn, calculateDDay, getPriorityLabel, getPriorityColor } from '@/lib/utils';
 import { Checkbox } from '../atoms/Checkbox';
 import { Badge } from '../atoms/Badge';
-import { Calendar, MoreVertical, Repeat } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, MoreVertical, Repeat } from 'lucide-react';
 import type { Task } from '@/types';
 import { useTranslation } from 'react-i18next';
 
@@ -51,27 +51,29 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         'hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-700',
         'border-l-4',
         priorityBorderClass,
+        isSelected && 'bg-primary-50/60 ring-2 ring-primary-500/20 dark:bg-primary-900/10',
         task.isCompleted && 'opacity-60'
       )}
     >
       <div className="flex items-start gap-3">
-        {onSelect && (
-          <div className="pt-0.5">
-            <Checkbox
-              checked={isSelected}
-              onChange={(e) => onSelect(task.id, e.target.checked)}
-              aria-label={`${task.title} ${t('task.selectTask')}`}
-            />
-          </div>
-        )}
-
-        {/* Checkbox */}
+        {/* 완료 상태 버튼: 선택 체크박스와 구분되도록 원형 아이콘 사용 */}
         <div className="pt-0.5">
-          <Checkbox
-            checked={task.isCompleted}
-            onChange={() => onToggle(task)}
+          <button
+            type="button"
+            onClick={() => onToggle(task)}
+            aria-pressed={task.isCompleted}
             aria-label={task.isCompleted ? t('task.markIncomplete') : t('task.completeTask')}
-          />
+            title={task.isCompleted ? t('task.markIncomplete') : t('task.completeTask')}
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200',
+              'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-900',
+              task.isCompleted
+                ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
+                : 'border-2 border-neutral-300 bg-white text-neutral-400 hover:border-success hover:text-success focus:ring-success dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-500'
+            )}
+          >
+            {task.isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+          </button>
         </div>
 
         {/* Content */}
@@ -126,7 +128,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             </div>
 
             {/* Menu Button */}
-            <div className="relative">
+            <div className="relative flex items-start gap-2">
+              {onSelect && (
+                <div className="pt-1">
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={(e) => onSelect(task.id, e.target.checked)}
+                    aria-label={`${task.title} ${t('task.selectTask')}`}
+                    className="h-4 w-4 rounded border-neutral-400 dark:border-neutral-500 peer-checked:bg-primary-600 peer-checked:border-primary-600 group-hover:border-primary-500"
+                  />
+                </div>
+              )}
               <button
                 onClick={() => setShowMenu(!showMenu)}
                 aria-label={t('common.more')}

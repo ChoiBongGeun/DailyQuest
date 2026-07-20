@@ -203,6 +203,13 @@ public class TaskDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class ReorderRequest {
+        private List<Long> taskIds;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     public static class PageResponse {
         private List<ListResponse> content;

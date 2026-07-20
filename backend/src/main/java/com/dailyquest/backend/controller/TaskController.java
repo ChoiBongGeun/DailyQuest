@@ -169,6 +169,16 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Task marked as incomplete", response));
     }
 
+    @Operation(summary = "Reorder project tasks", description = "Persist drag-and-drop sort order for tasks in a project")
+    @PatchMapping("/project/{projectId}/reorder")
+    public ResponseEntity<ApiResponse<Void>> reorderProjectTasks(
+            @Parameter(description = "Project ID") @PathVariable Long projectId,
+            @RequestBody TaskDto.ReorderRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        taskService.reorderProjectTasks(userId, projectId, request.getTaskIds());
+        return ResponseEntity.ok(ApiResponse.success("Task order updated"));
+    }
+
     @Operation(summary = "Delete task", description = "Delete a task")
     @DeleteMapping("/{taskId}")
     public ResponseEntity<ApiResponse<Void>> deleteTask(
