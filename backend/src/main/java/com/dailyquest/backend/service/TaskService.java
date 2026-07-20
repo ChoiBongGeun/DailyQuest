@@ -242,7 +242,11 @@ public class TaskService {
             if (!project.getUser().getId().equals(userId)) {
                 throw new BusinessException(ErrorCode.NO_PERMISSION);
             }
-            task.changeProject(project);
+            Long currentProjectId = task.getProject() != null ? task.getProject().getId() : null;
+            if (!request.getProjectId().equals(currentProjectId)) {
+                task.changeProject(project);
+                task.updateSortOrder(null);
+            }
         }
 
         if (Boolean.TRUE.equals(request.getIsRecurring())) {

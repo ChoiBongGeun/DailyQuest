@@ -128,6 +128,7 @@ export default function ProjectDetailPage() {
   const addToast = useUIStore((s) => s.addToast);
 
   const [orderedTaskIds, setOrderedTaskIds] = React.useState<number[]>([]);
+  const reorderDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (tasks) setOrderedTaskIds(tasks.map((t) => t.id));
@@ -146,7 +147,12 @@ export default function ProjectDetailPage() {
       const oldIndex = prev.indexOf(active.id as number);
       const newIndex = prev.indexOf(over.id as number);
       const next = arrayMove(prev, oldIndex, newIndex);
-      reorderTasks.mutate(next);
+
+      if (reorderDebounceRef.current) clearTimeout(reorderDebounceRef.current);
+      reorderDebounceRef.current = setTimeout(() => {
+        reorderTasks.mutate(next);
+      }, 500);
+
       return next;
     });
   };
