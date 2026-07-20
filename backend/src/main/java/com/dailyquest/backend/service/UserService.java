@@ -161,7 +161,7 @@ public class UserService {
 
         User user = resetToken.getUser();
         user.updatePassword(passwordEncoder.encode(newPassword));
-        resetToken.markUsed(now);
+        passwordResetTokenRepository.deleteAllByUser(user);
         log.info("Password reset completed: userId={}", user.getId());
     }
 }

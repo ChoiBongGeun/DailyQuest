@@ -167,6 +167,9 @@ public class TaskDto {
         private Boolean isCompleted;
         private LocalDateTime completedAt;
         private Boolean isRecurring;
+        private RecurrenceType recurrenceType;
+        private Integer recurrenceInterval;
+        private LocalDate recurrenceEndDate;
         private Long projectId;
         private String projectName;
         private String projectColor;
@@ -185,6 +188,9 @@ public class TaskDto {
                     .isCompleted(task.getIsCompleted())
                     .completedAt(task.getCompletedAt())
                     .isRecurring(task.getIsRecurring())
+                    .recurrenceType(task.getRecurrenceType())
+                    .recurrenceInterval(task.getRecurrenceInterval())
+                    .recurrenceEndDate(task.getRecurrenceEndDate())
                     .projectId(task.getProject() != null ? task.getProject().getId() : null)
                     .projectName(task.getProject() != null ? task.getProject().getName() : null)
                     .projectColor(task.getProject() != null ? task.getProject().getColor() : null)

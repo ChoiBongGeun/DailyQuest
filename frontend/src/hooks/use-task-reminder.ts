@@ -8,6 +8,7 @@ import type { Task } from '@/types';
 import { parseTaskDueDateTime } from '@/lib/utils';
 
 const REMINDER_CHECK_INTERVAL = 30 * 1000;
+const REMINDER_CATCH_UP_WINDOW_MS = REMINDER_CHECK_INTERVAL * 2;
 
 function buildReminderKey(task: Task, offset: number): string {
   return `${task.id}-${offset}-${task.dueDate}-${task.dueTime}`;
@@ -132,7 +133,8 @@ export function useTaskReminder() {
 
       for (const offset of effectiveOffsets) {
         const triggerAt = new Date(dueDateTime.getTime() - offset * 60 * 1000);
-        if (now >= triggerAt && now < dueDateTime) {
+        const elapsed = now.getTime() - triggerAt.getTime();
+        if (now >= triggerAt && now < dueDateTime && elapsed <= REMINDER_CATCH_UP_WINDOW_MS) {
           sendNotification(task, offset);
         }
       }
