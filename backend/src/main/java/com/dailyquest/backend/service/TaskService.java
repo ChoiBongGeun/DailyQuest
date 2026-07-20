@@ -42,6 +42,7 @@ public class TaskService {
 
         validateRecurringConfiguration(request.getIsRecurring(), request.getRecurrenceType());
         validateRecurrenceInterval(request.getRecurrenceInterval());
+        validateDueTime(request.getDueDate(), request.getDueTime());
 
         Task task = Task.builder()
                 .user(user)
@@ -50,6 +51,8 @@ public class TaskService {
                 .description(request.getDescription())
                 .priority(request.getPriority() != null ? request.getPriority() : Priority.MEDIUM)
                 .dueDate(request.getDueDate())
+                .dueTime(request.getDueTime())
+                .reminderOffsets(formatReminderOffsets(request.getReminderOffsets()))
                 .isRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false)
                 .recurrenceType(request.getRecurrenceType())
                 .recurrenceInterval(request.getRecurrenceInterval() != null ? request.getRecurrenceInterval() : 1)
@@ -152,6 +155,17 @@ public class TaskService {
         if (request.getDueDate() != null) {
             task.updateDueDate(request.getDueDate());
         }
+        if (request.getDueTime() != null) {
+            validateDueTime(task.getDueDate(), request.getDueTime());
+            task.updateDueTime(request.getDueTime());
+        }
+        if (request.getReminderOffsets() != null) {
+            // 빈 배열이면 null로 설정 (기본 설정 사용)
+            String offsets = request.getReminderOffsets().isEmpty()
+                    ? null
+                    : formatReminderOffsets(request.getReminderOffsets());
+            task.updateReminderOffsets(offsets);
+        }
         if (request.getProjectId() != null) {
             Project project = projectRepository.findById(request.getProjectId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
@@ -233,6 +247,8 @@ public class TaskService {
                 .description(completedTask.getDescription())
                 .priority(completedTask.getPriority())
                 .dueDate(nextDueDate)
+                .dueTime(completedTask.getDueTime())
+                .reminderOffsets(completedTask.getReminderOffsets())
                 .isRecurring(true)
                 .recurrenceType(completedTask.getRecurrenceType())
                 .recurrenceInterval(completedTask.getRecurrenceInterval())
@@ -279,6 +295,24 @@ public class TaskService {
                     "recurrenceInterval must be between 1 and 365"
             );
         }
+    }
+
+    private void validateDueTime(LocalDate dueDate, java.time.LocalTime dueTime) {
+        if (dueTime != null && dueDate == null) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "dueDate is required when dueTime is set"
+            );
+        }
+    }
+
+    private String formatReminderOffsets(java.util.List<Integer> offsets) {
+        if (offsets == null || offsets.isEmpty()) {
+            return null;
+        }
+        return offsets.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
     }
 
     private Task getOwnedTask(Long userId, Long taskId) {

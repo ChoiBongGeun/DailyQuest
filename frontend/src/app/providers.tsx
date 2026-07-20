@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import '@/lib/i18n';
+import i18n from '@/lib/i18n';
+import { useUIStore } from '@/stores/ui-store';
 import { ToastContainer } from '@/components/organisms/ToastContainer';
 
 const queryClient = new QueryClient({
@@ -16,6 +17,14 @@ const queryClient = new QueryClient({
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const language = useUIStore((s) => s.language);
+
+  React.useEffect(() => {
+    if (language && i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+  }, [language]);
+
   return (
     <QueryClientProvider client={queryClient}>
       {children}

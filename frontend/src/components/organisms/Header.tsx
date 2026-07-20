@@ -1,9 +1,13 @@
 // src/components/organisms/Header.tsx
+'use client';
+
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '../atoms/Button';
 import { DarkModeToggle } from '../atoms/DarkModeToggle';
-import { Bell, Settings, LogOut, User } from 'lucide-react';
+import { NotificationDropdown } from './NotificationDropdown';
+import { SettingsModal } from './SettingsModal';
+import { Settings, LogOut, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +15,7 @@ export const Header: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [showSettings, setShowSettings] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -34,16 +39,17 @@ export const Header: React.FC = () => {
               {/* Dark Mode Toggle */}
               <DarkModeToggle />
 
-            {/* Notifications */}
-            <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors relative">
-              <Bell className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-            </button>
+              {/* Notifications */}
+              <NotificationDropdown />
 
-            {/* Settings */}
-            <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-              <Settings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-            </button>
+              {/* Settings */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                aria-label={t('nav.settings')}
+              >
+                <Settings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+              </button>
 
               {/* User Menu */}
               <div className="flex items-center gap-3 ml-2 pl-2 border-l border-neutral-200 dark:border-neutral-800">
@@ -68,6 +74,8 @@ export const Header: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
       </header>
   );
 };

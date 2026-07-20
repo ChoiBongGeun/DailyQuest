@@ -75,6 +75,17 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    public static class NicknameRequest {
+
+        @NotBlank(message = "Nickname is required")
+        @Size(min = 2, max = 100, message = "Nickname must be between 2 and 100 characters")
+        private String nickname;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class Response {
         
         private Long id;
