@@ -36,7 +36,8 @@ public enum ErrorCode {
     PROJECT_NAME_ALREADY_EXISTS(409002, HttpStatus.CONFLICT, "Project name already exists"),
 
     // 500xxx - Internal Server Error
-    INTERNAL_SERVER_ERROR(500000, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+    INTERNAL_SERVER_ERROR(500000, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
+    MAIL_DELIVERY_FAILED(503001, HttpStatus.SERVICE_UNAVAILABLE, "Mail server is unavailable");
 
     private final int code;
     private final HttpStatus httpStatus;

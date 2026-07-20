@@ -65,7 +65,13 @@ public class SecurityConfig {
                 // Health check
                 .requestMatchers("/api/health/**").permitAll()
                 // Auth endpoints
-                .requestMatchers("/api/users/signup", "/api/users/login", "/api/users/check-email").permitAll()
+                .requestMatchers(
+                        "/api/users/signup",
+                        "/api/users/login",
+                        "/api/users/check-email",
+                        "/api/users/forgot-password",
+                        "/api/users/reset-password"
+                ).permitAll()
                 // All other API requires authentication
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
