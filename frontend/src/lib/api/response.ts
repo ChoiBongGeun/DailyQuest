@@ -25,3 +25,29 @@ export function extractErrorMessage(error: unknown, fallback: string): string {
 
   return axiosError.response?.data?.message || axiosError.message || fallback;
 }
+
+export function extractErrorCode(error: unknown): number | undefined {
+  if (typeof error !== 'object' || !error) return undefined;
+
+  const axiosError = error as {
+    response?: {
+      data?: {
+        code?: number;
+      };
+    };
+  };
+
+  return axiosError.response?.data?.code;
+}
+
+export function extractHttpStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || !error) return undefined;
+
+  const axiosError = error as {
+    response?: {
+      status?: number;
+    };
+  };
+
+  return axiosError.response?.status;
+}

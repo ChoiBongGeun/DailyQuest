@@ -9,6 +9,7 @@ import { Input } from '@/components/atoms/Input';
 import { Mail, Lock, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { isValidEmail, isStrongPassword } from '@/lib/utils';
+import { DarkModeToggle } from '@/components/atoms/DarkModeToggle';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -63,7 +64,10 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center px-4 py-8 sm:py-12 transition-colors">
+      <div className="absolute right-4 top-4">
+        <DarkModeToggle />
+      </div>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -73,12 +77,12 @@ export default function SignUpPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold gradient-text mb-2">{t('common.appName')}</h1>
-          <p className="text-neutral-600">{t('auth.createAccount')}</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('auth.createAccount')}</p>
         </div>
 
         {/* SignUp Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-5 sm:mb-6">{t('auth.signupTitle')}</h2>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-transparent dark:border-neutral-800 p-5 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-5 sm:mb-6">{t('auth.signupTitle')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -149,7 +153,7 @@ export default function SignUpPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
               {t('auth.hasAccount')}{' '}
               <Link
                 href="/login"
@@ -162,7 +166,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-neutral-500 mt-8">
+        <p className="text-center text-sm text-neutral-500 dark:text-neutral-500 mt-8">
           {t('landing.footer.copyright')}
         </p>
       </div>

@@ -86,6 +86,31 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    public static class ForgotPasswordRequest {
+
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ResetPasswordRequest {
+
+        @NotBlank(message = "Token is required")
+        private String token;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+        private String newPassword;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class Response {
         
         private Long id;

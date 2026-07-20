@@ -92,4 +92,20 @@ public class UserController {
         }
         return ResponseEntity.ok(ApiResponse.success("Email available", false));
     }
+
+    @Operation(summary = "Request password reset", description = "Send a password reset email when the account exists")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> requestPasswordReset(
+            @Valid @RequestBody UserDto.ForgotPasswordRequest request) {
+        userService.requestPasswordReset(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("If the email exists, a password reset link has been sent"));
+    }
+
+    @Operation(summary = "Reset password", description = "Reset password with a password reset token")
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody UserDto.ResetPasswordRequest request) {
+        userService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
+    }
 }

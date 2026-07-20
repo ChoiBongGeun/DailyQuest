@@ -60,6 +60,26 @@ export function calculateDDay(dueDate: Date | string): string {
   return `D-${days}`;
 }
 
+export function parseTaskDueDateTime(dueDate?: string, dueTime?: string): Date | null {
+  if (!dueDate || !dueTime) return null;
+
+  const dateParts = dueDate.split('-').map(Number);
+  const timeParts = dueTime.split(':').map(Number);
+  if (dateParts.length < 3 || timeParts.length < 2) return null;
+
+  const [year, month, day] = dateParts;
+  const [hour, minute] = timeParts;
+  if ([year, month, day, hour, minute].some(Number.isNaN)) return null;
+
+  const dueDateTime = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(dueDateTime.getTime()) ? null : dueDateTime;
+}
+
+export function formatTaskDueDateTime(dueDate?: string, dueTime?: string): string {
+  if (!dueDate) return '';
+  return dueTime ? `${dueDate} ${dueTime.slice(0, 5)}` : dueDate;
+}
+
 /**
  * 우선순위를 한글로 변환
  */

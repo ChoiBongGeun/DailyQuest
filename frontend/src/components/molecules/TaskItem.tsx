@@ -11,6 +11,8 @@ interface TaskItemProps {
   onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
+  isSelected?: boolean;
+  onSelect?: (taskId: number, selected: boolean) => void;
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({
@@ -18,6 +20,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onToggle,
   onEdit,
   onDelete,
+  isSelected = false,
+  onSelect,
 }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = React.useState(false);
@@ -51,11 +55,22 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       )}
     >
       <div className="flex items-start gap-3">
+        {onSelect && (
+          <div className="pt-0.5">
+            <Checkbox
+              checked={isSelected}
+              onChange={(e) => onSelect(task.id, e.target.checked)}
+              aria-label={`${task.title} ${t('task.selectTask')}`}
+            />
+          </div>
+        )}
+
         {/* Checkbox */}
         <div className="pt-0.5">
           <Checkbox
             checked={task.isCompleted}
             onChange={() => onToggle(task)}
+            aria-label={task.isCompleted ? t('task.markIncomplete') : t('task.completeTask')}
           />
         </div>
 

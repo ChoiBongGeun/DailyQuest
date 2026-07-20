@@ -1,14 +1,19 @@
 package com.dailyquest.backend.service;
 
+import com.dailyquest.backend.domain.PasswordResetToken;
+import com.dailyquest.backend.domain.PasswordResetTokenRepository;
 import com.dailyquest.backend.domain.User;
 import com.dailyquest.backend.domain.UserRepository;
 import com.dailyquest.backend.dto.UserDto;
 import com.dailyquest.backend.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -17,7 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordResetTokenGenerator passwordResetTokenGenerator;
+    private final PasswordResetMailService passwordResetMailService;
+
+    @Value("${app.password-reset.token-expiration-minutes:30}")
+    private long passwordResetTokenExpirationMinutes;
 
     @Transactional
     public UserDto.Response signUp(UserDto.SignUpRequest request) {
@@ -112,5 +123,45 @@ public class UserService {
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Transactional
+    public void requestPasswordReset(String email) {
+        var userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            log.info("Password reset requested for unknown email");
+            return;
+        }
+
+        User user = userOptional.get();
+        String token = passwordResetTokenGenerator.createToken();
+        String tokenHash = passwordResetTokenGenerator.hashToken(token);
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(passwordResetTokenExpirationMinutes))
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+        passwordResetMailService.sendPasswordResetMail(user, token);
+        log.info("Password reset mail sent: userId={}", user.getId());
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        String tokenHash = passwordResetTokenGenerator.hashToken(token);
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT, "Invalid or expired reset token"));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!resetToken.isUsable(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid or expired reset token");
+        }
+
+        User user = resetToken.getUser();
+        user.updatePassword(passwordEncoder.encode(newPassword));
+        passwordResetTokenRepository.deleteAllByUser(user);
+        log.info("Password reset completed: userId={}", user.getId());
     }
 }
