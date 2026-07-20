@@ -18,12 +18,17 @@ const queryClient = new QueryClient({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const language = useUIStore((s) => s.language);
+  const theme = useUIStore((s) => s.theme);
 
   React.useEffect(() => {
     if (language && i18n.language !== language) {
       i18n.changeLanguage(language);
     }
   }, [language]);
+
+  React.useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
   return (
     <QueryClientProvider client={queryClient}>

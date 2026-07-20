@@ -19,6 +19,15 @@ export interface SignupRequest {
   nickname: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   user: User;
@@ -75,6 +84,20 @@ export interface TaskUpdateRequest {
   dueTime?: string;
   reminderOffsets?: number[] | null; // 빈 배열이면 기본 설정으로 초기화
   isCompleted?: boolean;
+  isRecurring?: boolean;
+  recurrenceType?: RecurrenceType;
+  recurrenceInterval?: number;
+  recurrenceEndDate?: string;
+}
+
+export interface NotificationHistoryItem {
+  id: string;
+  taskId: number;
+  taskTitle: string;
+  type: 'reminder';
+  message: string;
+  dueAt: string;
+  triggeredAt: string;
 }
 
 // ========================================
@@ -119,6 +142,7 @@ export interface DashboardStats {
 // ========================================
 export interface ApiResponse<T> {
   success: boolean;
+  code?: number;
   data: T;
   message?: string;
 }

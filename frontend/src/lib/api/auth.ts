@@ -1,5 +1,5 @@
 import axiosInstance from '../api-client';
-import type { LoginRequest, SignupRequest, AuthResponse, User } from '@/types';
+import type { AuthResponse, ForgotPasswordRequest, LoginRequest, ResetPasswordRequest, SignupRequest, User } from '@/types';
 import { unwrapApiResponse } from './response';
 
 interface LoginApiResponse {
@@ -48,6 +48,16 @@ export const authApi = {
     const response = await axiosInstance.delete('/api/users/me', {
       data: { password },
     });
+    unwrapApiResponse(response);
+  },
+
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+    const response = await axiosInstance.post('/api/users/forgot-password', data);
+    unwrapApiResponse(response);
+  },
+
+  resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+    const response = await axiosInstance.post('/api/users/reset-password', data);
     unwrapApiResponse(response);
   },
 };
