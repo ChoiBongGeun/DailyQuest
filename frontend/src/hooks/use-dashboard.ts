@@ -13,6 +13,7 @@ export const useDashboardStats = () => {
   return useQuery({
     queryKey: DASHBOARD_KEYS.stats(),
     queryFn: dashboardApi.getStats,
-    refetchInterval: 30000, // 30초마다 자동 갱신
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 };

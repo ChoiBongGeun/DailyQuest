@@ -63,6 +63,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
   const [newReminderMinutes, setNewReminderMinutes] = React.useState('');
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (!editingTask) {
       setFormData(EMPTY_FORM);
       setNewReminderMinutes('');
@@ -88,7 +89,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
       recurrenceEndDate: editingTask.recurrenceEndDate || '',
     });
     setNewReminderMinutes('');
-  }, [editingTask]);
+  }, [editingTask, isOpen]);
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) return;

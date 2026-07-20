@@ -3,6 +3,8 @@ import { useAuthStore } from '@/stores/auth-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+let isRedirecting = false;
+
 const PUBLIC_URLS = [
     '/api/users/login',
     '/api/users/signup',
@@ -32,7 +34,8 @@ axiosInstance.interceptors.request.use(
 
             if (!isTokenValid) {
                 console.warn('[API Client] Token expired, redirecting to login');
-                if (typeof window !== 'undefined') {
+                if (typeof window !== 'undefined' && !isRedirecting) {
+                    isRedirecting = true;
                     window.location.href = '/login';
                 }
                 return Promise.reject(new Error('Token expired'));
@@ -67,8 +70,9 @@ axiosInstance.interceptors.response.use(
             message: error.response?.data?.message || error.message,
         });
 
-        if (error.response?.status === 401 && !isPublicUrl) {
+        if (error.response?.status === 401 && !isPublicUrl && !isRedirecting) {
             console.warn('[API Client] 401 Unauthorized - Logging out');
+            isRedirecting = true;
             useAuthStore.getState().logout();
             if (typeof window !== 'undefined') {
                 window.location.href = '/login';

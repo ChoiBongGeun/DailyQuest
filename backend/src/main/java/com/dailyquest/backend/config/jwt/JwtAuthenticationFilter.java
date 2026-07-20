@@ -34,8 +34,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long userId = jwtTokenProvider.getUserId(token);
             String email = jwtTokenProvider.getEmail(token);
 
-            // Create authentication with userId as principal
-            UsernamePasswordAuthenticationToken authentication = 
+            // Stateless JWT: user existence is not re-verified per request to avoid DB overhead.
+            // Deleted/disabled users retain access until token expiry (configured in JwtTokenProvider).
+            UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
                     userId, 
                     null, 

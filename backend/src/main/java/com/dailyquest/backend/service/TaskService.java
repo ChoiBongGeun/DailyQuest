@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class TaskService {
 
+    private static final int MIN_RECURRENCE_INTERVAL = 1;
+    private static final int MAX_RECURRENCE_INTERVAL = 365;
+
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
@@ -366,7 +369,7 @@ public class TaskService {
     }
 
     private void validateRecurrenceInterval(Integer interval) {
-        if (interval != null && (interval < 1 || interval > 365)) {
+        if (interval != null && (interval < MIN_RECURRENCE_INTERVAL || interval > MAX_RECURRENCE_INTERVAL)) {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT,
                     "recurrenceInterval must be between 1 and 365"

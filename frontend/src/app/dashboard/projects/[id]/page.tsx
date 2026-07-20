@@ -306,7 +306,7 @@ export default function ProjectDetailPage() {
     { value: 'COMPLETED', label: t('task.filterStatusCompleted') },
   ];
 
-  if (!projectId || Number.isNaN(projectId)) {
+  if (!projectId || Number.isNaN(projectId) || projectId <= 0) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
         <Header />
