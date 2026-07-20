@@ -143,11 +143,14 @@ public class TaskService {
         java.util.Map<Long, Task> taskMap = tasks.stream()
                 .collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
 
+        java.util.Set<Long> projectTaskIds = taskMap.keySet();
+        java.util.Set<Long> requestedIds = new java.util.HashSet<>(taskIds);
+        if (taskIds == null || taskIds.size() != projectTaskIds.size() || !requestedIds.equals(projectTaskIds)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "taskIds must be an exact permutation of the project's tasks");
+        }
+
         for (int i = 0; i < taskIds.size(); i++) {
-            Task task = taskMap.get(taskIds.get(i));
-            if (task != null) {
-                task.updateSortOrder(i);
-            }
+            taskMap.get(taskIds.get(i)).updateSortOrder(i);
         }
     }
 

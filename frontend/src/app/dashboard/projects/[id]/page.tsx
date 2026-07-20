@@ -147,10 +147,16 @@ export default function ProjectDetailPage() {
       const oldIndex = prev.indexOf(active.id as number);
       const newIndex = prev.indexOf(over.id as number);
       const next = arrayMove(prev, oldIndex, newIndex);
+      const snapshot = prev;
 
       if (reorderDebounceRef.current) clearTimeout(reorderDebounceRef.current);
       reorderDebounceRef.current = setTimeout(() => {
-        reorderTasks.mutate(next);
+        reorderTasks.mutate(next, {
+          onError: () => {
+            setOrderedTaskIds(snapshot);
+            addToast(t('error.generic'), 'error');
+          },
+        });
       }, 500);
 
       return next;
