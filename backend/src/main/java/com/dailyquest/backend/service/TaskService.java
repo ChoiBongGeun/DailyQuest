@@ -388,7 +388,9 @@ public class TaskService {
                 orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
             }
             case "priority" -> {
-                orders.add(new Sort.Order(direction, "priority"));
+                // priorityRank: HIGH=1, MEDIUM=2, LOW=3 — reverse direction to get semantic order
+                Sort.Direction rankDir = isDesc ? Sort.Direction.ASC : Sort.Direction.DESC;
+                orders.add(new Sort.Order(rankDir, "priorityRank"));
                 orders.add(new Sort.Order(Sort.Direction.DESC, "createdAt"));
             }
             case "title" -> {

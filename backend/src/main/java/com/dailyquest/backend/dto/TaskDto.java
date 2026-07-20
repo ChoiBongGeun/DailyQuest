@@ -165,6 +165,7 @@ public class TaskDto {
         private LocalTime dueTime;
         private List<Integer> reminderOffsets;
         private Boolean isCompleted;
+        private LocalDateTime completedAt;
         private Boolean isRecurring;
         private Long projectId;
         private String projectName;
@@ -182,6 +183,7 @@ public class TaskDto {
                     .dueTime(task.getDueTime())
                     .reminderOffsets(parseReminderOffsets(task.getReminderOffsets()))
                     .isCompleted(task.getIsCompleted())
+                    .completedAt(task.getCompletedAt())
                     .isRecurring(task.getIsRecurring())
                     .projectId(task.getProject() != null ? task.getProject().getId() : null)
                     .projectName(task.getProject() != null ? task.getProject().getName() : null)
