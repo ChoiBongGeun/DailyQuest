@@ -55,8 +55,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       )}
     >
       <div className="flex items-start gap-3">
+        {/* 선택 체크박스: hover 시 또는 선택된 상태일 때만 노출 */}
         {onSelect && (
-          <div className="pt-0.5">
+          <div className={cn('pt-0.5 transition-opacity', isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
             <Checkbox
               checked={isSelected}
               onChange={(e) => onSelect(task.id, e.target.checked)}
@@ -65,7 +66,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </div>
         )}
 
-        {/* Checkbox */}
+        {/* 완료 체크박스: 항상 노출 */}
         <div className="pt-0.5">
           <Checkbox
             checked={task.isCompleted}
