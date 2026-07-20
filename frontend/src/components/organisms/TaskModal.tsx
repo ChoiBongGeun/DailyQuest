@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Bell, Minus, Plus, X } from 'lucide-react';
+import { Bell, Minus, Plus, Repeat, X } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Textarea } from '../atoms/Textarea';
 import { useCreateTask, useUpdateTask } from '@/hooks/use-tasks';
 import { useCreateProject, useProjects } from '@/hooks/use-projects';
-import type { Priority, Task } from '@/types';
+import type { Priority, RecurrenceType, Task } from '@/types';
 import { extractErrorMessage } from '@/lib/api/response';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui-store';
@@ -27,6 +27,10 @@ interface TaskFormData {
   reminderOffsets: number[];
   useDefaultReminder: boolean;
   projectId?: number;
+  isRecurring: boolean;
+  recurrenceType: RecurrenceType;
+  recurrenceInterval: number;
+  recurrenceEndDate?: string;
 }
 
 const EMPTY_FORM: TaskFormData = {
@@ -38,6 +42,10 @@ const EMPTY_FORM: TaskFormData = {
   reminderOffsets: [],
   useDefaultReminder: true,
   projectId: undefined,
+  isRecurring: false,
+  recurrenceType: 'DAILY',
+  recurrenceInterval: 1,
+  recurrenceEndDate: '',
 };
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) => {
@@ -74,6 +82,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
       reminderOffsets: customReminderOffsets,
       useDefaultReminder: editingTask.reminderOffsets == null,
       projectId: editingTask.projectId,
+      isRecurring: editingTask.isRecurring,
+      recurrenceType: editingTask.recurrenceType || 'DAILY',
+      recurrenceInterval: editingTask.recurrenceInterval || 1,
+      recurrenceEndDate: editingTask.recurrenceEndDate || '',
     });
     setNewReminderMinutes('');
   }, [editingTask]);
@@ -99,6 +111,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (formData.isRecurring && !formData.dueDate) {
+      addToast(t('task.recurrenceDueDateRequired'), 'error');
+      return;
+    }
+
+    if (
+      formData.isRecurring &&
+      formData.recurrenceEndDate &&
+      formData.dueDate &&
+      formData.recurrenceEndDate < formData.dueDate
+    ) {
+      addToast(t('task.recurrenceEndDateError'), 'error');
+      return;
+    }
+
     const payload = {
       title: formData.title,
       description: formData.description || undefined,
@@ -109,10 +136,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
         ? formData.useDefaultReminder
           ? []
           : formData.reminderOffsets
-        : formData.useDefaultReminder
-          ? null
-          : formData.reminderOffsets,
+          : formData.useDefaultReminder
+            ? null
+            : formData.reminderOffsets,
       projectId: formData.projectId,
+      isRecurring: formData.isRecurring,
+      recurrenceType: formData.isRecurring ? formData.recurrenceType : undefined,
+      recurrenceInterval: formData.isRecurring ? formData.recurrenceInterval : undefined,
+      recurrenceEndDate:
+        formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : undefined,
     };
 
     try {
@@ -173,6 +205,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
     { value: 'HIGH', label: t('task.high') },
     { value: 'MEDIUM', label: t('task.medium') },
     { value: 'LOW', label: t('task.low') },
+  ];
+
+  const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
+    { value: 'DAILY', label: t('task.daily') },
+    { value: 'WEEKLY', label: t('task.weekly') },
+    { value: 'MONTHLY', label: t('task.monthly') },
   ];
 
   return (
@@ -345,6 +383,89 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTa
                 onChange={(e) => setFormData((prev) => ({ ...prev, dueTime: e.target.value }))}
                 fullWidth
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('task.recurring')}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('task.recurringDescription')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isRecurring: !prev.isRecurring,
+                      recurrenceType: prev.recurrenceType || 'DAILY',
+                      recurrenceInterval: prev.recurrenceInterval || 1,
+                    }))
+                  }
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition ${
+                    formData.isRecurring
+                      ? 'border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300'
+                  }`}
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  {formData.isRecurring ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {formData.isRecurring && (
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3 space-y-3 bg-neutral-50 dark:bg-neutral-800/60">
+                  <div className="grid grid-cols-3 gap-2">
+                    {recurrenceOptions.map((option) => {
+                      const isActive = formData.recurrenceType === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, recurrenceType: option.value }))}
+                          className={`px-2.5 py-2 rounded-lg border text-xs sm:text-sm font-medium transition ${
+                            isActive
+                              ? 'border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                              : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label={t('task.repeatEvery')}
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={String(formData.recurrenceInterval)}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          recurrenceInterval: Math.min(365, Math.max(1, Number.parseInt(e.target.value || '1', 10))),
+                        }))
+                      }
+                      fullWidth
+                    />
+                    <Input
+                      label={t('task.recurrenceEndDate')}
+                      type="date"
+                      value={formData.recurrenceEndDate}
+                      min={formData.dueDate || undefined}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                      fullWidth
+                    />
+                  </div>
+
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('task.recurrenceHelp')}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
