@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTodayTasks, useWeekTasks } from './use-tasks';
 import { useUIStore } from '@/stores/ui-store';
 import type { Task } from '@/types';
+import { parseTaskDueDateTime } from '@/lib/utils';
 
 const REMINDER_CHECK_INTERVAL = 30 * 1000;
 
@@ -18,6 +19,7 @@ export function useTaskReminder() {
   const { data: weekTasks } = useWeekTasks();
   const reminderOffsets = useUIStore((s) => s.reminderOffsets);
   const addToast = useUIStore((s) => s.addToast);
+  const addNotificationHistory = useUIStore((s) => s.addNotificationHistory);
   const sentRemindersRef = useRef<Set<string>>(new Set());
 
   const todayTasksRef = useRef(todayTasks);
@@ -76,6 +78,15 @@ export function useTaskReminder() {
       });
 
       addToast(body, 'warning');
+      addNotificationHistory({
+        id: reminderKey,
+        taskId: task.id,
+        taskTitle: task.title,
+        type: 'reminder',
+        message: body,
+        dueAt: parseTaskDueDateTime(task.dueDate, task.dueTime)?.toISOString() || '',
+        triggeredAt: new Date().toISOString(),
+      });
 
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         try {
@@ -90,7 +101,7 @@ export function useTaskReminder() {
         }
       }
     },
-    [addToast, saveSentReminders, t]
+    [addNotificationHistory, addToast, saveSentReminders, t]
   );
 
   const checkReminders = useCallback(() => {
@@ -104,24 +115,11 @@ export function useTaskReminder() {
       }
       seen.add(task.id);
 
-      const dateParts = task.dueDate.split('-');
-      const timeParts = task.dueTime.split(':');
-      if (dateParts.length < 3 || timeParts.length < 2) {
-        continue;
-      }
-      const [year, month, day] = dateParts.map(Number);
-      const [hour, minute] = timeParts.map(Number);
-      if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day) || Number.isNaN(hour) || Number.isNaN(minute)) {
-        continue;
-      }
-      const dueDateTime = new Date(year, month - 1, day, hour, minute, 0, 0);
+      const dueDateTime = parseTaskDueDateTime(task.dueDate, task.dueTime);
 
-      if (Number.isNaN(dueDateTime.getTime()) || dueDateTime <= now) {
+      if (!dueDateTime || dueDateTime <= now) {
         continue;
       }
-
-      const diffMs = dueDateTime.getTime() - now.getTime();
-      const minutesUntilDue = Math.floor(diffMs / (1000 * 60));
 
       const effectiveOffsets =
         task.reminderOffsets && task.reminderOffsets.length > 0
@@ -133,7 +131,8 @@ export function useTaskReminder() {
       }
 
       for (const offset of effectiveOffsets) {
-        if (minutesUntilDue >= offset - 1 && minutesUntilDue <= offset + 1) {
+        const triggerAt = new Date(dueDateTime.getTime() - offset * 60 * 1000);
+        if (now >= triggerAt && now < dueDateTime) {
           sendNotification(task, offset);
         }
       }

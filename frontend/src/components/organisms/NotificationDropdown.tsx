@@ -4,13 +4,18 @@ import React from 'react';
 import { Bell, AlertTriangle, Clock, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTodayTasks, useWeekTasks } from '@/hooks/use-tasks';
-import type { Task } from '@/types';
+import { useUIStore } from '@/stores/ui-store';
+import { formatTaskDueDateTime, parseTaskDueDateTime } from '@/lib/utils';
+import type { NotificationHistoryItem, Task } from '@/types';
 
 interface Notification {
   id: string;
-  type: 'overdue' | 'dueSoon' | 'completed';
-  task: Task;
+  type: 'overdue' | 'dueSoon' | 'completed' | 'reminder';
+  task?: Task;
+  history?: NotificationHistoryItem;
   message: string;
+  dateLabel?: string;
+  sortTime: number;
 }
 
 export const NotificationDropdown: React.FC = () => {
@@ -21,6 +26,8 @@ export const NotificationDropdown: React.FC = () => {
 
   const { data: todayTasks } = useTodayTasks();
   const { data: weekTasks } = useWeekTasks();
+  const notificationHistory = useUIStore((state) => state.notificationHistory);
+  const clearNotificationHistory = useUIStore((state) => state.clearNotificationHistory);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -54,6 +61,8 @@ export const NotificationDropdown: React.FC = () => {
             type: 'completed',
             task,
             message: `"${task.title}" ${t('notifications.taskCompleted')}`,
+            dateLabel: formatTaskDueDateTime(task.dueDate, task.dueTime),
+            sortTime: completedDate.getTime(),
           });
         }
         continue;
@@ -61,36 +70,53 @@ export const NotificationDropdown: React.FC = () => {
 
       if (!task.dueDate || task.isCompleted) continue;
 
-      const dueDate = new Date(task.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
+      const dueDate = parseTaskDueDateTime(task.dueDate, task.dueTime) || new Date(task.dueDate);
+      const dueDateDay = new Date(dueDate);
+      dueDateDay.setHours(0, 0, 0, 0);
 
-      if (dueDate < todayStart) {
+      if (dueDateDay < todayStart || (!!task.dueTime && dueDate.getTime() < nowMs)) {
         items.push({
           id: `overdue-${task.id}`,
           type: 'overdue',
           task,
           message: `"${task.title}" ${t('notifications.taskOverdue')}`,
+          dateLabel: formatTaskDueDateTime(task.dueDate, task.dueTime),
+          sortTime: dueDate.getTime(),
         });
       } else {
-        const daysUntilDue = Math.ceil((dueDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntilDue = Math.ceil((dueDateDay.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
         if (daysUntilDue <= 1) {
           items.push({
             id: `dueSoon-${task.id}`,
             type: 'dueSoon',
             task,
             message: `"${task.title}" ${t('notifications.taskDueSoon')}`,
+            dateLabel: formatTaskDueDateTime(task.dueDate, task.dueTime),
+            sortTime: dueDate.getTime(),
           });
         }
       }
     }
 
+    for (const history of notificationHistory) {
+      items.push({
+        id: history.id,
+        type: 'reminder',
+        history,
+        message: history.message,
+        dateLabel: history.dueAt ? new Date(history.dueAt).toLocaleString() : undefined,
+        sortTime: new Date(history.triggeredAt).getTime(),
+      });
+    }
+
     return items
       .filter((n) => !dismissed.has(n.id))
       .sort((a, b) => {
-        const priority = { overdue: 0, dueSoon: 1, completed: 2 };
-        return priority[a.type] - priority[b.type];
+        const priority = { overdue: 0, dueSoon: 1, reminder: 2, completed: 3 };
+        const priorityDiff = priority[a.type] - priority[b.type];
+        return priorityDiff || b.sortTime - a.sortTime;
       });
-  }, [todayTasks, weekTasks, dismissed, t]);
+  }, [todayTasks, weekTasks, notificationHistory, dismissed, t]);
 
   const unreadCount = notifications.length;
 
@@ -100,6 +126,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const handleClearAll = () => {
     setDismissed(new Set(notifications.map((n) => n.id)));
+    clearNotificationHistory();
   };
 
   const getIcon = (type: Notification['type']) => {
@@ -110,6 +137,8 @@ export const NotificationDropdown: React.FC = () => {
         return <Clock className="w-4 h-4 text-amber-500" />;
       case 'completed':
         return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'reminder':
+        return <Bell className="w-4 h-4 text-primary-500" />;
     }
   };
 
@@ -121,6 +150,8 @@ export const NotificationDropdown: React.FC = () => {
         return 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30';
       case 'completed':
         return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/30';
+      case 'reminder':
+        return 'bg-primary-50 dark:bg-primary-950/30 border-primary-100 dark:border-primary-900/30';
     }
   };
 
@@ -175,9 +206,9 @@ export const NotificationDropdown: React.FC = () => {
                       <p className="text-sm text-neutral-800 dark:text-neutral-200 leading-snug">
                         {notification.message}
                       </p>
-                      {notification.task.dueDate && (
+                      {notification.dateLabel && (
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                          {notification.task.dueDate}
+                          {notification.dateLabel}
                         </p>
                       )}
                     </div>

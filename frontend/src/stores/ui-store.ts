@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { NotificationHistoryItem } from '@/types';
 
 let toastCounter = 0;
 const toastTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -43,6 +44,10 @@ interface UIState {
 
   notificationPermission: NotificationPermission | 'default';
   setNotificationPermission: (permission: NotificationPermission) => void;
+
+  notificationHistory: NotificationHistoryItem[];
+  addNotificationHistory: (item: NotificationHistoryItem) => void;
+  clearNotificationHistory: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -111,6 +116,16 @@ export const useUIStore = create<UIState>()(
 
       notificationPermission: 'default',
       setNotificationPermission: (permission) => set({ notificationPermission: permission }),
+
+      notificationHistory: [],
+      addNotificationHistory: (item) =>
+        set((state) => ({
+          notificationHistory: [
+            item,
+            ...state.notificationHistory.filter((history) => history.id !== item.id),
+          ].slice(0, 50),
+        })),
+      clearNotificationHistory: () => set({ notificationHistory: [] }),
     }),
     {
       name: 'ui-storage',
@@ -119,6 +134,7 @@ export const useUIStore = create<UIState>()(
         theme: state.theme,
         language: state.language,
         reminderOffsets: state.reminderOffsets,
+        notificationHistory: state.notificationHistory,
       }),
     }
   )
