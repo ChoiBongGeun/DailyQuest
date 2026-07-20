@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 import { useAuthStore } from '@/stores/auth-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -6,8 +6,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const PUBLIC_URLS = [
     '/api/users/login',
     '/api/users/signup',
+    '/api/users/forgot-password',
+    '/api/users/reset-password',
     '/api/health',
 ];
+
+const isPublicApiUrl = (url = '') =>
+    PUBLIC_URLS.some(publicUrl => url === publicUrl || url.startsWith(publicUrl + '?') || url.startsWith(publicUrl + '/'));
 
 const axiosInstance = axios.create({
     baseURL: API_URL,
@@ -20,7 +25,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const url = config.url || '';
-        const isPublicUrl = PUBLIC_URLS.some(publicUrl => url === publicUrl || url.startsWith(publicUrl + '?') || url.startsWith(publicUrl + '/'));
+        const isPublicUrl = isPublicApiUrl(url);
 
         if (!isPublicUrl) {
             const isTokenValid = useAuthStore.getState().checkTokenExpiry();
@@ -53,13 +58,16 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error: AxiosError<any>) => {
+        const url = error.config?.url || '';
+        const isPublicUrl = isPublicApiUrl(url);
+
         console.error('[API Client] Response error:', {
             status: error.response?.status,
-            url: error.config?.url,
+            url,
             message: error.response?.data?.message || error.message,
         });
 
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && !isPublicUrl) {
             console.warn('[API Client] 401 Unauthorized - Logging out');
             useAuthStore.getState().logout();
             if (typeof window !== 'undefined') {
