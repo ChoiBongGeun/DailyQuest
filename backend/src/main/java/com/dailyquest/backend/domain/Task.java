@@ -51,6 +51,9 @@ public class Task {
     @Formula("CASE priority WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END")
     private Integer priorityRank;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     @Column(name = "due_date")
     private LocalDate dueDate;
 
@@ -151,6 +154,10 @@ public class Task {
 
     public void changeProject(Project project) {
         this.project = project;
+    }
+
+    public void updateSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 
 

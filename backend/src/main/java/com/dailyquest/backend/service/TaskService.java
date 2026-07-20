@@ -124,10 +124,31 @@ public class TaskService {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
-        return taskRepository.findByProjectIdAndUserIdOrderByCreatedAtDesc(projectId, userId)
+        return taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId)
                 .stream()
                 .map(TaskDto.ListResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void reorderProjectTasks(Long userId, Long projectId, List<Long> taskIds) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        List<Task> tasks = taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId);
+        java.util.Map<Long, Task> taskMap = tasks.stream()
+                .collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
+
+        for (int i = 0; i < taskIds.size(); i++) {
+            Task task = taskMap.get(taskIds.get(i));
+            if (task != null) {
+                task.updateSortOrder(i);
+            }
+        }
     }
 
     public List<TaskDto.ListResponse> getTasksByPriority(Long userId, Priority priority) {

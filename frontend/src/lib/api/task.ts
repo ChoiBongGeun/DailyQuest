@@ -61,6 +61,11 @@ export const taskApi = {
     return unwrapApiResponse<Task[]>(response).map(mapTask);
   },
 
+  reorderProjectTasks: async (projectId: number, taskIds: number[]): Promise<void> => {
+    const response = await axiosInstance.patch(`/api/tasks/project/${projectId}/reorder`, { taskIds });
+    unwrapApiResponse(response);
+  },
+
   search: async (params: TaskSearchParams): Promise<PageResult<Task>> => {
     const response = await axiosInstance.get('/api/tasks/search', { params });
     const page = unwrapApiResponse<PageResult<Task>>(response);

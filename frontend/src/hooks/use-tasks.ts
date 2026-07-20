@@ -102,3 +102,14 @@ export const useSetTaskComplete = () => {
     },
   });
 };
+
+export const useReorderProjectTasks = (projectId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (taskIds: number[]) => taskApi.reorderProjectTasks(projectId, taskIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TASK_KEYS.byProject(projectId) });
+    },
+  });
+};
