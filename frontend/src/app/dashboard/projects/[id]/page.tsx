@@ -191,6 +191,8 @@ export default function ProjectDetailPage() {
     return filtered;
   }, [safeTasks, searchKeyword, statusFilter, orderedTaskIds]);
 
+  const isFiltered = statusFilter !== 'ALL' || searchKeyword.trim() !== '';
+
   const allVisibleSelected =
     filteredTasks.length > 0 &&
     filteredTasks.every((task) => selectedTaskIds.has(task.id));
@@ -439,7 +441,7 @@ export default function ProjectDetailPage() {
             ) : filteredTasks.length === 0 ? (
               <div className="text-sm text-neutral-600 dark:text-neutral-400">{t('task.noneInProject')}</div>
             ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext sensors={isFiltered ? [] : sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-2">
                     <div className="px-2 py-1 border-b border-neutral-200 dark:border-neutral-800">
