@@ -65,9 +65,8 @@ function SortableTaskRow({
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing touch-none text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400"
+        className="cursor-grab active:cursor-grabbing touch-none text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
         aria-label="드래그하여 순서 변경"
-        tabIndex={-1}
       >
         <GripVertical className="w-4 h-4" />
       </button>
