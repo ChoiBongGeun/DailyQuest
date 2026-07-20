@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Search, X } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, TrendingUp, Plus, Search, X, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/organisms/Header';
 import { Sidebar, type DashboardView } from '@/components/organisms/Sidebar';
@@ -49,6 +49,8 @@ export default function Page() {
   const [priorityFilter, setPriorityFilter] = React.useState<TaskPriorityFilter>('ALL');
   const [sortOption, setSortOption] = React.useState<TaskSortOption>('createdDesc');
   const [page, setPage] = React.useState(0);
+  const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<number>>(new Set());
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const pageSize = 20;
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
@@ -193,6 +195,115 @@ export default function Page() {
   const tasks = searchQuery.data?.content || [];
   const totalElements = searchQuery.data?.totalElements || 0;
   const totalPages = searchQuery.data?.totalPages || 0;
+  const visibleTaskIds = React.useMemo(() => tasks.map((task) => task.id), [tasks]);
+  const selectedTasks = React.useMemo(
+    () => tasks.filter((task) => selectedTaskIds.has(task.id)),
+    [tasks, selectedTaskIds]
+  );
+  const selectedCount = selectedTaskIds.size;
+  const allVisibleSelected =
+    visibleTaskIds.length > 0 && visibleTaskIds.every((taskId) => selectedTaskIds.has(taskId));
+
+  React.useEffect(() => {
+    setSelectedTaskIds((prev) => {
+      const visible = new Set(visibleTaskIds);
+      const next = new Set([...prev].filter((taskId) => visible.has(taskId)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [visibleTaskIds]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable;
+
+      if (event.key === '/' && !isTyping) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      if (event.key.toLowerCase() === 'n' && !isTyping) {
+        event.preventDefault();
+        openCreateModal();
+      }
+
+      if (event.key === 'Escape') {
+        setSelectedTaskIds(new Set());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSelectTask = (taskId: number, selected: boolean) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(taskId);
+      } else {
+        next.delete(taskId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleTaskIds.forEach((taskId) => next.delete(taskId));
+      } else {
+        visibleTaskIds.forEach((taskId) => next.add(taskId));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkComplete = async () => {
+    const targets = selectedTasks.filter((task) => !task.isCompleted);
+    if (!targets.length) return;
+
+    try {
+      await Promise.all(
+        targets.map((task) =>
+          setTaskComplete.mutateAsync({
+            id: task.id,
+            isCompleted: true,
+          })
+        )
+      );
+      addToast(t('task.bulkCompleteSuccess', { count: targets.length }), 'success');
+      setSelectedTaskIds(new Set());
+    } catch (error) {
+      addToast(extractErrorMessage(error, t('error.generic')), 'error');
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (!selectedCount) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: t('task.bulkDelete'),
+      message: t('task.bulkDeleteConfirm', { count: selectedCount }),
+      onConfirm: async () => {
+        try {
+          await Promise.all([...selectedTaskIds].map((id) => deleteTask.mutateAsync(id)));
+          addToast(t('task.bulkDeleteSuccess', { count: selectedCount }), 'success');
+          setSelectedTaskIds(new Set());
+        } catch (error) {
+          addToast(extractErrorMessage(error, t('error.generic')), 'error');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
 
   const statusFilterOptions = [
     { value: 'ALL', label: t('task.filterStatusAll') },
@@ -328,6 +439,7 @@ export default function Page() {
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <Input
+                  ref={searchInputRef}
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
                   placeholder={t('task.searchPlaceholder')}
@@ -365,6 +477,41 @@ export default function Page() {
                 </div>
               </div>
 
+              {tasks.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2">
+                  <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={handleSelectAllVisible}
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    {selectedCount > 0
+                      ? t('task.selectedCount', { count: selectedCount })
+                      : t('task.selectVisible')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkComplete}
+                      disabled={selectedTasks.every((task) => task.isCompleted)}
+                    >
+                      {t('task.bulkComplete')}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      leftIcon={<Trash2 className="w-4 h-4" />}
+                      onClick={handleBulkDelete}
+                      disabled={selectedCount === 0}
+                    >
+                      {t('task.bulkDelete')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {searchQuery.isLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
@@ -389,6 +536,8 @@ export default function Page() {
                       onToggle={handleToggle}
                       onEdit={openEditModal}
                       onDelete={handleDelete}
+                      isSelected={selectedTaskIds.has(task.id)}
+                      onSelect={handleSelectTask}
                     />
                   ))}
                 </div>
