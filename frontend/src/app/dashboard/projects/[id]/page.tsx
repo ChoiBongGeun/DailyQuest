@@ -153,7 +153,7 @@ export default function ProjectDetailPage() {
       reorderDebounceRef.current = setTimeout(() => {
         reorderTasks.mutate(next, {
           onError: () => {
-            setOrderedTaskIds(snapshot);
+            queryClient.invalidateQueries({ queryKey: ['tasks', 'project', projectId] });
             addToast(t('error.generic'), 'error');
           },
         });

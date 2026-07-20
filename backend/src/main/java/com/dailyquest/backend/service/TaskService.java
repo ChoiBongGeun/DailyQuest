@@ -144,8 +144,8 @@ public class TaskService {
                 .collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
 
         java.util.Set<Long> projectTaskIds = taskMap.keySet();
-        java.util.Set<Long> requestedIds = new java.util.HashSet<>(taskIds);
-        if (taskIds == null || taskIds.size() != projectTaskIds.size() || !requestedIds.equals(projectTaskIds)) {
+        if (taskIds == null || taskIds.size() != projectTaskIds.size()
+                || !new java.util.HashSet<>(taskIds).equals(projectTaskIds)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "taskIds must be an exact permutation of the project's tasks");
         }
 
