@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectApi } from '@/lib/api/project';
 import type { Project, ProjectCreateRequest, ProjectUpdateRequest } from '@/types';
 
-const PROJECT_KEYS = {
+export const PROJECT_KEYS = {
   all: ['projects'] as const,
   lists: () => [...PROJECT_KEYS.all, 'list'] as const,
   details: () => [...PROJECT_KEYS.all, 'detail'] as const,

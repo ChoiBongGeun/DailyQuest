@@ -9,8 +9,9 @@ import { Button } from '@/components/atoms/Button';
 import { Checkbox } from '@/components/atoms/Checkbox';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
-import { useProject, useProjectStats } from '@/hooks/use-projects';
+import { PROJECT_KEYS, useProject, useProjectStats } from '@/hooks/use-projects';
 import { useDeleteTask, useSetTaskComplete, useTasksByProject } from '@/hooks/use-tasks';
+import { useQueryClient } from '@tanstack/react-query';
 import { TaskModal } from '@/components/organisms/TaskModal';
 import { ConfirmModal } from '@/components/molecules/ConfirmModal';
 import { useTranslation } from 'react-i18next';
@@ -38,12 +39,16 @@ export default function ProjectDetailPage() {
     taskId: number | null;
   }>({ isOpen: false, taskId: null });
 
+  const queryClient = useQueryClient();
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: stats } = useProjectStats(projectId);
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasksByProject(projectId);
   const setTaskComplete = useSetTaskComplete();
   const deleteTask = useDeleteTask();
   const addToast = useUIStore((s) => s.addToast);
+
+  const refreshStats = () =>
+    queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.stats(projectId) });
 
   const safeTasks = tasks || [];
 
@@ -100,6 +105,7 @@ export default function ProjectDetailPage() {
       );
       addToast(t('task.bulkCompleteSuccess', { count: target.length }), 'success');
       setSelectedTaskIds(new Set());
+      refreshStats();
     } catch (error) {
       addToast(extractErrorMessage(error, t('error.generic')), 'error');
     }
@@ -109,6 +115,7 @@ export default function ProjectDetailPage() {
     try {
       await deleteTask.mutateAsync(taskId);
       addToast(t('success.taskDeleted'), 'success');
+      refreshStats();
     } catch (error) {
       addToast(extractErrorMessage(error, t('error.generic')), 'error');
     } finally {
@@ -124,6 +131,7 @@ export default function ProjectDetailPage() {
       await Promise.all(selectedTasks.map((task) => deleteTask.mutateAsync(task.id)));
       addToast(t('task.bulkDeleteSuccess', { count: selectedTasks.length }), 'success');
       setSelectedTaskIds(new Set());
+      refreshStats();
     } catch (error) {
       addToast(extractErrorMessage(error, t('error.generic')), 'error');
     }
