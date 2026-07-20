@@ -5,9 +5,9 @@
 - [x] 2) Project detail page (stats/trend/bulk actions)
 
 ## Next
-- [ ] 3) Recurring task UI completion (full recurrence controls in task modal)
-- [ ] 4) Notification enhancements (dueTime-precise reminder timing, notification history)
-- [ ] 5) Task UX upgrades (bulk select/actions, drag sort, keyboard shortcuts)
+- [x] 3) Recurring task UI completion (full recurrence controls in task modal)
+- [x] 4) Notification enhancements (dueTime-precise reminder timing, local notification history)
+- [ ] 5) Task UX upgrades (bulk select/actions + keyboard shortcuts done; drag sort needs persisted ordering support)
 - [ ] 6) Collaboration features (project sharing, member roles, activity log)
 - [ ] 7) Quality/ops tooling (E2E tests, error tracking, API performance monitoring)
 - [ ] 8) Deployment/environment hardening (env template, runtime requirement docs)
