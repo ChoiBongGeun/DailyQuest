@@ -144,8 +144,12 @@ public class UserService {
                 .build();
 
         passwordResetTokenRepository.save(resetToken);
-        passwordResetMailService.sendPasswordResetMail(user, token);
-        log.info("Password reset mail sent: userId={}", user.getId());
+        try {
+            passwordResetMailService.sendPasswordResetMail(user, token);
+            log.info("Password reset mail sent: userId={}", user.getId());
+        } catch (Exception e) {
+            log.warn("Password reset mail delivery failed: userId={}, reason={}", user.getId(), e.getMessage());
+        }
     }
 
     @Transactional
