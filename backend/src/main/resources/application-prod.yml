@@ -1,6 +1,6 @@
 # 프로덕션 환경 설정
 # 실행: --spring.profiles.active=prod
-# 필수 환경변수: FRONTEND_URL, DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET
+# 필수 환경변수: FRONTEND_URL, DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, ACTUATOR_USERNAME, ACTUATOR_PASSWORD
 
 spring:
   jpa:
