@@ -66,7 +66,7 @@ function ResetPasswordForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-2xl">D</span>
             </div>
           </div>

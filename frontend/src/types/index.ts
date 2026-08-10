@@ -109,6 +109,8 @@ export interface Project {
   color: string;
   taskCount?: number;
   completedTaskCount?: number;
+  currentUserRole?: ProjectRole;
+  memberCount?: number;
   createdAt: string;
 }
 
@@ -120,6 +122,43 @@ export interface ProjectCreateRequest {
 export interface ProjectUpdateRequest {
   name?: string;
   color?: string;
+}
+
+export type ProjectRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+export type ProjectActivityType =
+  | 'PROJECT_CREATED'
+  | 'PROJECT_UPDATED'
+  | 'PROJECT_SHARED'
+  | 'MEMBER_ROLE_UPDATED'
+  | 'MEMBER_REMOVED'
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_COMPLETED'
+  | 'TASK_UNCOMPLETED'
+  | 'TASK_DELETED'
+  | 'TASK_REORDERED';
+
+export interface ProjectMember {
+  id: number | null;
+  userId: number;
+  email: string | null;
+  nickname: string;
+  role: ProjectRole;
+  createdAt: string;
+}
+
+export interface ProjectActivity {
+  id: number;
+  actorId: number;
+  actorNickname: string;
+  type: ProjectActivityType;
+  message: string;
+  createdAt: string;
+}
+
+export interface ProjectShareRequest {
+  email: string;
+  role: Exclude<ProjectRole, 'OWNER'>;
 }
 
 // ========================================

@@ -2,39 +2,55 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Clock3, GripVertical, ListChecks, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Activity, ArrowLeft, CheckCircle2, Clock3, GripVertical, ListChecks, Pencil, Share2, Trash2, TrendingUp, UserMinus, Users } from 'lucide-react';
+import {
+  DndContext, DragEndEvent, KeyboardSensor, PointerSensor,
+  closestCenter, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Header } from '@/components/organisms/Header';
 import { Card } from '@/components/atoms/Card';
 import { Button } from '@/components/atoms/Button';
 import { Checkbox } from '@/components/atoms/Checkbox';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
-import { PROJECT_KEYS, useProject, useProjectStats } from '@/hooks/use-projects';
-import { useDeleteTask, useReorderProjectTasks, useSetTaskComplete, useTasksByProject } from '@/hooks/use-tasks';
-import { useQueryClient } from '@tanstack/react-query';
 import { TaskModal } from '@/components/organisms/TaskModal';
 import { ConfirmModal } from '@/components/molecules/ConfirmModal';
-import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@/stores/ui-store';
+import {
+  PROJECT_KEYS,
+  useProject,
+  useProjectActivities,
+  useProjectMembers,
+  useProjectStats,
+  useRemoveProjectMember,
+  useShareProject,
+  useUpdateProjectMemberRole,
+} from '@/hooks/use-projects';
+import { useDeleteTask, useReorderProjectTasks, useSetTaskComplete, useTasksByProject } from '@/hooks/use-tasks';
 import { extractErrorMessage } from '@/lib/api/response';
-import { getPriorityLabel } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-import type { Task } from '@/types';
-import {
-  DndContext, DragEndEvent, KeyboardSensor, PointerSensor,
-  closestCenter, useSensor, useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext, sortableKeyboardCoordinates, useSortable,
-  verticalListSortingStrategy, arrayMove,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { cn, getPriorityLabel } from '@/lib/utils';
+import { useUIStore } from '@/stores/ui-store';
+import type { ProjectRole, Task } from '@/types';
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'COMPLETED';
+type AssignableRole = Exclude<ProjectRole, 'OWNER'>;
+
+const roleOptions: Array<{ value: AssignableRole; label: string }> = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'MEMBER', label: 'Member' },
+  { value: 'VIEWER', label: 'Viewer' },
+];
 
 function SortableTaskRow({
   task,
   selected,
+  canEdit,
   onToggleSelect,
   onEdit,
   onDelete,
@@ -42,35 +58,31 @@ function SortableTaskRow({
 }: {
   task: Task;
   selected: boolean;
+  canEdit: boolean;
   onToggleSelect: (checked: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
   t: (key: string) => string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: task.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+    useSortable({ id: task.id, disabled: !canEdit });
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
       className="group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing touch-none text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
-        aria-label="드래그하여 순서 변경"
+        disabled={!canEdit}
+        className="cursor-grab active:cursor-grabbing touch-none text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Drag to reorder"
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <Checkbox checked={selected} onChange={(e) => onToggleSelect(e.target.checked)} />
+      <Checkbox checked={selected} disabled={!canEdit} onChange={(e) => onToggleSelect(e.target.checked)} />
       <div className="flex-1 min-w-0">
         <p className={cn('text-sm font-medium text-neutral-900 dark:text-neutral-100', task.isCompleted && 'line-through opacity-60')}>
           {task.title}
@@ -84,14 +96,16 @@ function SortableTaskRow({
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={onEdit}
-          className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+          disabled={!canEdit}
+          className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors disabled:opacity-40"
           aria-label={t('common.edit')}
         >
           <Pencil className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-300" />
         </button>
         <button
           onClick={onDelete}
-          className="p-1.5 rounded-lg hover:bg-error/10 transition-colors"
+          disabled={!canEdit}
+          className="p-1.5 rounded-lg hover:bg-error/10 transition-colors disabled:opacity-40"
           aria-label={t('common.delete')}
         >
           <Trash2 className="w-3.5 h-3.5 text-error" />
@@ -112,25 +126,34 @@ export default function ProjectDetailPage() {
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<number>>(new Set());
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = React.useState(false);
-  const [confirmModal, setConfirmModal] = React.useState<{
-    isOpen: boolean;
-    taskId: number | null;
-  }>({ isOpen: false, taskId: null });
+  const [shareEmail, setShareEmail] = React.useState('');
+  const [shareRole, setShareRole] = React.useState<AssignableRole>('MEMBER');
+  const [confirmModal, setConfirmModal] = React.useState<{ isOpen: boolean; taskId: number | null }>({
+    isOpen: false,
+    taskId: null,
+  });
 
   const queryClient = useQueryClient();
+  const addToast = useUIStore((s) => s.addToast);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: stats } = useProjectStats(projectId);
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasksByProject(projectId);
-  const setTaskComplete = useSetTaskComplete();
-  const deleteTask = useDeleteTask();
+  const { data: members } = useProjectMembers(projectId);
+  const { data: activities } = useProjectActivities(projectId);
+  const setTaskComplete = useSetTaskComplete(projectId);
+  const deleteTask = useDeleteTask(projectId);
   const reorderTasks = useReorderProjectTasks(projectId);
-  const addToast = useUIStore((s) => s.addToast);
+  const shareProject = useShareProject(projectId);
+  const updateMemberRole = useUpdateProjectMemberRole(projectId);
+  const removeMember = useRemoveProjectMember(projectId);
 
+  const canManageMembers = project?.currentUserRole === 'OWNER' || project?.currentUserRole === 'ADMIN';
+  const canEditProjectTasks = project?.currentUserRole ? project.currentUserRole !== 'VIEWER' : false;
   const [orderedTaskIds, setOrderedTaskIds] = React.useState<number[]>([]);
   const reorderDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
-    if (tasks) setOrderedTaskIds(tasks.map((t) => t.id));
+    if (tasks) setOrderedTaskIds(tasks.map((task) => task.id));
   }, [tasks]);
 
   const sensors = useSensors(
@@ -139,15 +162,12 @@ export default function ProjectDetailPage() {
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!canEditProjectTasks) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
     setOrderedTaskIds((prev) => {
-      const oldIndex = prev.indexOf(active.id as number);
-      const newIndex = prev.indexOf(over.id as number);
-      const next = arrayMove(prev, oldIndex, newIndex);
-      const snapshot = prev;
-
+      const next = arrayMove(prev, prev.indexOf(active.id as number), prev.indexOf(over.id as number));
       if (reorderDebounceRef.current) clearTimeout(reorderDebounceRef.current);
       reorderDebounceRef.current = setTimeout(() => {
         reorderTasks.mutate(next, {
@@ -155,47 +175,39 @@ export default function ProjectDetailPage() {
             queryClient.invalidateQueries({ queryKey: ['tasks', 'project', projectId] });
             addToast(t('error.generic'), 'error');
           },
+          onSuccess: () => queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(projectId) }),
         });
       }, 500);
-
       return next;
     });
   };
 
-  const refreshStats = () =>
-    queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.stats(projectId) });
-
+  const refreshStats = () => queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.stats(projectId) });
   const safeTasks = tasks || [];
-
   const filteredTasks = React.useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
-    const filtered = safeTasks.filter((task) => {
-      const matchesKeyword =
-        !keyword ||
-        task.title.toLowerCase().includes(keyword) ||
-        (task.description || '').toLowerCase().includes(keyword);
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        (statusFilter === 'ACTIVE' ? !task.isCompleted : task.isCompleted);
-      return matchesKeyword && matchesStatus;
-    });
-
-    // 드래그로 변경된 순서 반영
-    if (orderedTaskIds.length > 0) {
-      filtered.sort((a, b) => {
+    return safeTasks
+      .filter((task) => {
+        const matchesKeyword =
+          !keyword ||
+          task.title.toLowerCase().includes(keyword) ||
+          (task.description || '').toLowerCase().includes(keyword);
+        const matchesStatus =
+          statusFilter === 'ALL' ||
+          (statusFilter === 'ACTIVE' ? !task.isCompleted : task.isCompleted);
+        return matchesKeyword && matchesStatus;
+      })
+      .sort((a, b) => {
         const ai = orderedTaskIds.indexOf(a.id);
         const bi = orderedTaskIds.indexOf(b.id);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
       });
-    }
-    return filtered;
   }, [safeTasks, searchKeyword, statusFilter, orderedTaskIds]);
 
-  const isFiltered = statusFilter !== 'ALL' || searchKeyword.trim() !== '';
-
   const allVisibleSelected =
-    filteredTasks.length > 0 &&
-    filteredTasks.every((task) => selectedTaskIds.has(task.id));
+    filteredTasks.length > 0 && filteredTasks.every((task) => selectedTaskIds.has(task.id));
+  const selectedTasks = safeTasks.filter((task) => selectedTaskIds.has(task.id));
+  const isFiltered = statusFilter !== 'ALL' || searchKeyword.trim() !== '';
 
   const toggleTaskSelection = (taskId: number, checked: boolean) => {
     setSelectedTaskIds((prev) => {
@@ -206,30 +218,12 @@ export default function ProjectDetailPage() {
     });
   };
 
-  const toggleSelectAllVisible = (checked: boolean) => {
-    setSelectedTaskIds((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        filteredTasks.forEach((task) => next.add(task.id));
-      } else {
-        filteredTasks.forEach((task) => next.delete(task.id));
-      }
-      return next;
-    });
-  };
-
-  const selectedTasks = safeTasks.filter((task) => selectedTaskIds.has(task.id));
-
   const handleBulkComplete = async () => {
+    if (!canEditProjectTasks) return;
     const target = selectedTasks.filter((task) => !task.isCompleted);
     if (!target.length) return;
-
     try {
-      await Promise.all(
-        target.map((task) =>
-          setTaskComplete.mutateAsync({ id: task.id, isCompleted: true })
-        )
-      );
+      await Promise.all(target.map((task) => setTaskComplete.mutateAsync({ id: task.id, isCompleted: true })));
       addToast(t('task.bulkCompleteSuccess', { count: target.length }), 'success');
       setSelectedTaskIds(new Set());
       refreshStats();
@@ -239,6 +233,7 @@ export default function ProjectDetailPage() {
   };
 
   const handleDeleteTask = async (taskId: number) => {
+    if (!canEditProjectTasks) return;
     try {
       await deleteTask.mutateAsync(taskId);
       addToast(t('success.taskDeleted'), 'success');
@@ -251,9 +246,8 @@ export default function ProjectDetailPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!selectedTasks.length) return;
+    if (!canEditProjectTasks || !selectedTasks.length) return;
     if (!confirm(t('task.bulkDeleteConfirm', { count: selectedTasks.length }))) return;
-
     try {
       await Promise.all(selectedTasks.map((task) => deleteTask.mutateAsync(task.id)));
       addToast(t('task.bulkDeleteSuccess', { count: selectedTasks.length }), 'success');
@@ -264,42 +258,41 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleShareProject = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!canManageMembers || !shareEmail.trim()) return;
+    try {
+      await shareProject.mutateAsync({ email: shareEmail.trim(), role: shareRole });
+      setShareEmail('');
+      setShareRole('MEMBER');
+      addToast('Project shared', 'success');
+    } catch (error) {
+      addToast(extractErrorMessage(error, t('error.generic')), 'error');
+    }
+  };
+
   const trendData = React.useMemo(() => {
     const days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - (6 - i));
-      return {
-        key: date.toISOString().slice(0, 10),
-        label: date.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
-        created: 0,
-        completed: 0,
-      };
+      return { key: date.toISOString().slice(0, 10), label: date.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }), created: 0, completed: 0 };
     });
-
-    const dayMap = new Map(days.map((d) => [d.key, d]));
-
+    const dayMap = new Map(days.map((day) => [day.key, day]));
     for (const task of safeTasks) {
       if (task.createdAt) {
-        const key = new Date(task.createdAt).toISOString().slice(0, 10);
-        const day = dayMap.get(key);
+        const day = dayMap.get(new Date(task.createdAt).toISOString().slice(0, 10));
         if (day) day.created += 1;
       }
       if (task.completedAt) {
-        const key = new Date(task.completedAt).toISOString().slice(0, 10);
-        const day = dayMap.get(key);
+        const day = dayMap.get(new Date(task.completedAt).toISOString().slice(0, 10));
         if (day) day.completed += 1;
       }
     }
-
     return days;
   }, [safeTasks]);
 
-  const maxTrendValue = Math.max(
-    1,
-    ...trendData.flatMap((d) => [d.created, d.completed])
-  );
-
+  const maxTrendValue = Math.max(1, ...trendData.flatMap((day) => [day.created, day.completed]));
   const statusOptions = [
     { value: 'ALL', label: t('task.filterStatusAll') },
     { value: 'ACTIVE', label: t('task.filterStatusActive') },
@@ -311,9 +304,7 @@ export default function ProjectDetailPage() {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
         <Header />
         <main className="p-6">
-          <Card>
-            <p className="text-neutral-700 dark:text-neutral-300">{t('error.notFound')}</p>
-          </Card>
+          <Card><p className="text-neutral-700 dark:text-neutral-300">{t('error.notFound')}</p></Card>
         </main>
       </div>
     );
@@ -333,15 +324,13 @@ export default function ProjectDetailPage() {
                 {projectLoading ? t('common.loading') : `${project?.name || t('project.title')} · ${t('project.detailTitle')}`}
               </h1>
             </div>
-            {project?.color && (
-              <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
-                <span>{project.color}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-300">
+              {project?.currentUserRole && <span>{project.currentUserRole}</span>}
+              {project?.color && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('dashboard.totalTasks')}</p>
@@ -363,106 +352,150 @@ export default function ProjectDetailPage() {
               </div>
               <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{stats?.completionRate ?? 0}%</p>
             </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Members</p>
+                <Users className="w-5 h-5 text-neutral-500" />
+              </div>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{members?.length ?? project?.memberCount ?? 0}</p>
+            </Card>
           </div>
 
-          <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock3 className="w-4 h-4 text-neutral-500" />
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{t('task.trend7days')}</h2>
-            </div>
-            <div className="grid grid-cols-7 gap-3">
-              {trendData.map((day) => (
-                <div key={day.key} className="text-center">
-                  <div className="h-28 flex items-end justify-center gap-1 mb-2">
-                    <div
-                      className="w-2.5 rounded bg-primary-400/80"
-                      style={{ height: `${(day.created / maxTrendValue) * 100}%` }}
-                      title={`${t('task.created')}: ${day.created}`}
-                    />
-                    <div
-                      className="w-2.5 rounded bg-success/80"
-                      style={{ height: `${(day.completed / maxTrendValue) * 100}%` }}
-                      title={`${t('task.completed')}: ${day.completed}`}
-                    />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock3 className="w-4 h-4 text-neutral-500" />
+                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{t('task.trend7days')}</h2>
+              </div>
+              <div className="grid grid-cols-7 gap-3">
+                {trendData.map((day) => (
+                  <div key={day.key} className="text-center">
+                    <div className="h-28 flex items-end justify-center gap-1 mb-2">
+                      <div className="w-2.5 rounded bg-primary-400/80" style={{ height: `${(day.created / maxTrendValue) * 100}%` }} title={`${t('task.created')}: ${day.created}`} />
+                      <div className="w-2.5 rounded bg-success/80" style={{ height: `${(day.completed / maxTrendValue) * 100}%` }} title={`${t('task.completed')}: ${day.completed}`} />
+                    </div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{day.label}</p>
                   </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{day.label}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between mb-4">
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  placeholder={t('task.searchPlaceholder')}
-                  fullWidth
-                  className="md:col-span-2"
-                />
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  options={statusOptions}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600 dark:text-neutral-300">
-                  {t('task.selectedCount', { count: selectedTaskIds.size })}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleBulkComplete}
-                  disabled={!selectedTaskIds.size}
-                >
-                  {t('task.bulkComplete')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={handleBulkDelete}
-                  disabled={!selectedTaskIds.size}
-                >
-                  {t('task.bulkDelete')}
-                </Button>
-              </div>
-            </div>
-
-            {tasksLoading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="skeleton h-14 rounded-lg" />
                 ))}
               </div>
-            ) : tasksError ? (
-              <div className="text-sm text-error">{t('error.generic')}</div>
-            ) : filteredTasks.length === 0 ? (
-              <div className="text-sm text-neutral-600 dark:text-neutral-400">{t('task.noneInProject')}</div>
-            ) : (
-              <DndContext sensors={isFiltered ? [] : sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    <div className="px-2 py-1 border-b border-neutral-200 dark:border-neutral-800">
-                      <Checkbox checked={allVisibleSelected} onChange={(e) => toggleSelectAllVisible(e.target.checked)} label={t('common.all')} />
-                    </div>
-                    {filteredTasks.map((task) => (
-                      <SortableTaskRow
-                        key={task.id}
-                        task={task}
-                        selected={selectedTaskIds.has(task.id)}
-                        onToggleSelect={(checked) => toggleTaskSelection(task.id, checked)}
-                        onEdit={() => { setEditingTask(task); setShowTaskModal(true); }}
-                        onDelete={() => setConfirmModal({ isOpen: true, taskId: task.id })}
-                        t={t}
-                      />
-                    ))}
+            </Card>
+
+            <Card>
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-neutral-500" />
+                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Activity</h2>
+              </div>
+              <div className="space-y-3 max-h-44 overflow-y-auto">
+                {(activities || []).map((item) => (
+                  <div key={item.id} className="text-sm">
+                    <p className="text-neutral-800 dark:text-neutral-100">{item.message}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{new Date(item.createdAt).toLocaleString()}</p>
                   </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </Card>
+                ))}
+                {!activities?.length && <p className="text-sm text-neutral-500 dark:text-neutral-400">No activity yet.</p>}
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between mb-4">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder={t('task.searchPlaceholder')} fullWidth className="md:col-span-2" />
+                  <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} options={statusOptions} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-300">{t('task.selectedCount', { count: selectedTaskIds.size })}</span>
+                  <Button size="sm" variant="outline" onClick={handleBulkComplete} disabled={!canEditProjectTasks || !selectedTaskIds.size}>{t('task.bulkComplete')}</Button>
+                  <Button size="sm" variant="danger" onClick={handleBulkDelete} disabled={!canEditProjectTasks || !selectedTaskIds.size}>{t('task.bulkDelete')}</Button>
+                </div>
+              </div>
+
+              {tasksLoading ? (
+                <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-14 rounded-lg" />)}</div>
+              ) : tasksError ? (
+                <div className="text-sm text-error">{t('error.generic')}</div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">{t('task.noneInProject')}</div>
+              ) : (
+                <DndContext sensors={isFiltered || !canEditProjectTasks ? [] : sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={filteredTasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      <div className="px-2 py-1 border-b border-neutral-200 dark:border-neutral-800">
+                        <Checkbox
+                          checked={allVisibleSelected}
+                          disabled={!canEditProjectTasks}
+                          onChange={(e) => {
+                            const next = new Set(selectedTaskIds);
+                            filteredTasks.forEach((task) => e.target.checked ? next.add(task.id) : next.delete(task.id));
+                            setSelectedTaskIds(next);
+                          }}
+                          label={t('common.all')}
+                        />
+                      </div>
+                      {filteredTasks.map((task) => (
+                        <SortableTaskRow
+                          key={task.id}
+                          task={task}
+                          selected={selectedTaskIds.has(task.id)}
+                          canEdit={canEditProjectTasks}
+                          onToggleSelect={(checked) => toggleTaskSelection(task.id, checked)}
+                          onEdit={() => { setEditingTask(task); setShowTaskModal(true); }}
+                          onDelete={() => setConfirmModal({ isOpen: true, taskId: task.id })}
+                          t={t}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+            </Card>
+
+            <Card>
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4 text-neutral-500" />
+                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Members</h2>
+              </div>
+              {canManageMembers && (
+                <form onSubmit={handleShareProject} className="space-y-2 mb-4">
+                  <Input value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} placeholder="user@example.com" fullWidth />
+                  <div className="flex gap-2">
+                    <Select value={shareRole} onChange={(e) => setShareRole(e.target.value as AssignableRole)} options={roleOptions} />
+                    <Button type="submit" size="sm" isLoading={shareProject.isPending} leftIcon={<Share2 className="w-4 h-4" />}>Share</Button>
+                  </div>
+                </form>
+              )}
+              <div className="space-y-3">
+                {(members || []).map((member) => (
+                  <div key={member.id ?? member.userId} className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{member.nickname}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{member.email ?? 'Hidden'}</p>
+                    </div>
+                    {canManageMembers && member.id && member.role !== 'OWNER' ? (
+                      <>
+                        <Select
+                          value={member.role}
+                          onChange={(e) => updateMemberRole.mutate({ memberId: member.id as number, role: e.target.value as AssignableRole })}
+                          options={roleOptions}
+                          className="text-xs py-1.5"
+                        />
+                        <button
+                          onClick={() => removeMember.mutate(member.id as number)}
+                          className="p-1.5 rounded-lg hover:bg-error/10"
+                          aria-label="Remove member"
+                        >
+                          <UserMinus className="w-4 h-4 text-error" />
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{member.role}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         </div>
       </main>
 
@@ -470,6 +503,7 @@ export default function ProjectDetailPage() {
         isOpen={showTaskModal}
         onClose={() => { setShowTaskModal(false); setEditingTask(null); }}
         editingTask={editingTask}
+        projectIdForActivity={projectId}
       />
       <ConfirmModal
         isOpen={confirmModal.isOpen}

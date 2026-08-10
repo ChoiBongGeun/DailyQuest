@@ -1,8 +1,9 @@
 package com.dailyquest.backend.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
@@ -28,10 +29,18 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     
     List<Task> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 
+    @Modifying
+    @Query("UPDATE Task t SET t.project = null WHERE t.project.id = :projectId")
+    void clearProjectReferencesByProjectId(@Param("projectId") Long projectId);
+
     @Query("SELECT t FROM Task t WHERE t.project.id = :projectId AND t.user.id = :userId " +
            "ORDER BY CASE WHEN t.sortOrder IS NULL THEN 1 ELSE 0 END, t.sortOrder ASC, t.createdAt DESC")
     List<Task> findByProjectIdAndUserIdOrderBySortOrder(
         @Param("projectId") Long projectId, @Param("userId") Long userId);
+
+    @Query("SELECT t FROM Task t WHERE t.project.id = :projectId " +
+           "ORDER BY CASE WHEN t.sortOrder IS NULL THEN 1 ELSE 0 END, t.sortOrder ASC, t.createdAt DESC")
+    List<Task> findByProjectIdOrderBySortOrder(@Param("projectId") Long projectId);
     
     List<Task> findByProjectIdAndIsCompleted(Long projectId, Boolean isCompleted);
     

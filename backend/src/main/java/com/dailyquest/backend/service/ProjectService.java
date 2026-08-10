@@ -6,6 +6,7 @@ import com.dailyquest.backend.exception.DuplicateException;
 import com.dailyquest.backend.exception.ErrorCode;
 import com.dailyquest.backend.exception.ResourceNotFoundException;
 import com.dailyquest.backend.exception.BusinessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,8 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectActivityRepository projectActivityRepository;
 
     @Transactional
     public ProjectDto.Response createProject(Long userId, ProjectDto.CreateRequest request) {
@@ -42,22 +45,31 @@ public class ProjectService {
                 .build();
 
         Project savedProject = projectRepository.save(project);
+        projectMemberRepository.save(ProjectMember.builder()
+                .project(savedProject)
+                .user(user)
+                .role(ProjectRole.OWNER)
+                .build());
+        recordActivity(savedProject, user, ProjectActivityType.PROJECT_CREATED,
+                user.getNickname() + " created the project");
         log.info("Project created: id={}, name={}", savedProject.getId(), savedProject.getName());
 
-        return ProjectDto.Response.from(savedProject);
+        return ProjectDto.Response.from(savedProject, 0, 0, ProjectRole.OWNER, 1);
     }
 
     public ProjectDto.Response getProject(Long userId, Long projectId) {
-        Project project = getOwnedProject(userId, projectId);
+        Project project = getAccessibleProject(userId, projectId);
 
         long taskCount = taskRepository.countByProjectId(projectId);
         long completedCount = taskRepository.countByProjectIdAndIsCompleted(projectId, true);
+        ProjectRole role = getRole(project, userId);
+        long memberCount = getVisibleMemberCount(project);
 
-        return ProjectDto.Response.from(project, taskCount, completedCount);
+        return ProjectDto.Response.from(project, taskCount, completedCount, role, memberCount);
     }
 
     public ProjectDto.StatsResponse getProjectStats(Long userId, Long projectId) {
-        Project project = getOwnedProject(userId, projectId);
+        Project project = getAccessibleProject(userId, projectId);
 
         long taskCount = taskRepository.countByProjectId(project.getId());
         long completedCount = taskRepository.countByProjectIdAndIsCompleted(project.getId(), true);
@@ -73,7 +85,12 @@ public class ProjectService {
     }
 
     public List<ProjectDto.Response> getAllProjects(Long userId) {
-        List<Project> projects = projectRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        Map<Long, Project> projectMap = new java.util.LinkedHashMap<>();
+        projectMemberRepository.findProjectsByUserId(userId)
+                .forEach(project -> projectMap.put(project.getId(), project));
+        projectRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .forEach(project -> projectMap.putIfAbsent(project.getId(), project));
+        List<Project> projects = new java.util.ArrayList<>(projectMap.values());
 
         if (projects.isEmpty()) {
             return List.of();
@@ -89,17 +106,42 @@ public class ProjectService {
             statsMap.put(projectId, new long[]{taskCount, completedCount});
         });
 
+        // Batch: 멤버십 전체 조회 (역할 + 멤버 수 + 오너 멤버십 여부)
+        Map<Long, ProjectRole> callerRoleMap = new HashMap<>();
+        Map<Long, Long> memberCountMap = new HashMap<>();
+        Map<Long, java.util.Set<Long>> projectMemberUserIds = new HashMap<>();
+
+        projectMemberRepository.findAllByProjectIdIn(projectIds).forEach(pm -> {
+            Long pid = pm.getProject().getId();
+            memberCountMap.merge(pid, 1L, Long::sum);
+            projectMemberUserIds.computeIfAbsent(pid, k -> new java.util.HashSet<>()).add(pm.getUser().getId());
+            if (pm.getUser().getId().equals(userId)) {
+                callerRoleMap.put(pid, pm.getRole());
+            }
+        });
+
         return projects.stream()
                 .map(project -> {
                     long[] stats = statsMap.getOrDefault(project.getId(), new long[]{0, 0});
-                    return ProjectDto.Response.from(project, stats[0], stats[1]);
+
+                    ProjectRole role = project.getUser().getId().equals(userId)
+                            ? ProjectRole.OWNER
+                            : callerRoleMap.getOrDefault(project.getId(), ProjectRole.MEMBER);
+
+                    long memberCount = memberCountMap.getOrDefault(project.getId(), 0L);
+                    boolean ownerIsMember = projectMemberUserIds
+                            .getOrDefault(project.getId(), java.util.Set.of())
+                            .contains(project.getUser().getId());
+                    long visibleMemberCount = ownerIsMember ? memberCount : memberCount + 1;
+
+                    return ProjectDto.Response.from(project, stats[0], stats[1], role, visibleMemberCount);
                 })
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public ProjectDto.Response updateProject(Long userId, Long projectId, ProjectDto.UpdateRequest request) {
-        Project project = getOwnedProject(userId, projectId);
+        Project project = getProjectWithRole(userId, projectId, ProjectRole.OWNER, ProjectRole.ADMIN);
 
         if (request.getName() != null) {
             if (projectRepository.existsByUserIdAndName(project.getUser().getId(), request.getName())
@@ -113,34 +155,195 @@ public class ProjectService {
             project.updateColor(request.getColor());
         }
 
+        User actor = getUser(userId);
+        recordActivity(project, actor, ProjectActivityType.PROJECT_UPDATED,
+                actor.getNickname() + " updated the project");
         log.info("Project updated: id={}", projectId);
 
         long taskCount = taskRepository.countByProjectId(projectId);
         long completedCount = taskRepository.countByProjectIdAndIsCompleted(projectId, true);
 
-        return ProjectDto.Response.from(project, taskCount, completedCount);
+        return ProjectDto.Response.from(project, taskCount, completedCount, getRole(project, userId),
+                getVisibleMemberCount(project));
     }
 
     @Transactional
     public void deleteProject(Long userId, Long projectId) {
-        Project project = getOwnedProject(userId, projectId);
+        Project project = getProjectWithRole(userId, projectId, ProjectRole.OWNER);
 
-        // 프로젝트에 속한 태스크의 프로젝트 참조를 null로 설정 (태스크 보존)
-        taskRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
-                .forEach(task -> task.changeProject(null));
-
+        taskRepository.clearProjectReferencesByProjectId(projectId);
         projectRepository.delete(project);
         log.info("Project deleted: id={}", projectId);
     }
 
-    private Project getOwnedProject(Long userId, Long projectId) {
+    @Transactional
+    public ProjectDto.MemberResponse shareProject(Long userId, Long projectId, ProjectDto.ShareRequest request) {
+        Project project = getProjectWithRole(userId, projectId, ProjectRole.OWNER, ProjectRole.ADMIN);
+        validateAssignableRole(request.getRole());
+
+        User targetUser = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND, request.getEmail()));
+
+        if (targetUser.getId().equals(project.getUser().getId())) {
+            throw new DuplicateException(ErrorCode.PROJECT_MEMBER_ALREADY_EXISTS, request.getEmail());
+        }
+
+        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, targetUser.getId())) {
+            throw new DuplicateException(ErrorCode.PROJECT_MEMBER_ALREADY_EXISTS, request.getEmail());
+        }
+
+        ProjectMember member;
+        try {
+            member = projectMemberRepository.saveAndFlush(ProjectMember.builder()
+                    .project(project)
+                    .user(targetUser)
+                    .role(request.getRole())
+                    .build());
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateException(ErrorCode.PROJECT_MEMBER_ALREADY_EXISTS, request.getEmail());
+        }
+
+        User actor = getUser(userId);
+        recordActivity(project, actor, ProjectActivityType.PROJECT_SHARED,
+                actor.getNickname() + " shared the project with " + targetUser.getNickname());
+        return ProjectDto.MemberResponse.from(member);
+    }
+
+    public List<ProjectDto.MemberResponse> getProjectMembers(Long userId, Long projectId) {
+        Project project = getAccessibleProject(userId, projectId);
+        ProjectRole callerRole = getRole(project, userId);
+        boolean hideEmail = callerRole == ProjectRole.VIEWER;
+
+        List<ProjectDto.MemberResponse> members = projectMemberRepository.findByProjectIdOrderByCreatedAtAsc(projectId)
+                .stream()
+                .map(m -> hideEmail ? ProjectDto.MemberResponse.fromWithoutEmail(m) : ProjectDto.MemberResponse.from(m))
+                .toList();
+
+        if (members.stream().anyMatch(member -> member.getUserId().equals(project.getUser().getId()))) {
+            return members;
+        }
+
+        ProjectDto.MemberResponse owner = ProjectDto.MemberResponse.builder()
+                .id(null)
+                .userId(project.getUser().getId())
+                .email(hideEmail ? null : project.getUser().getEmail())
+                .nickname(project.getUser().getNickname())
+                .role(ProjectRole.OWNER)
+                .createdAt(project.getCreatedAt())
+                .build();
+        return java.util.stream.Stream.concat(java.util.stream.Stream.of(owner), members.stream()).toList();
+    }
+
+    @Transactional
+    public ProjectDto.MemberResponse updateMemberRole(
+            Long userId,
+            Long projectId,
+            Long memberId,
+            ProjectDto.UpdateMemberRoleRequest request
+    ) {
+        Project project = getProjectWithRole(userId, projectId, ProjectRole.OWNER, ProjectRole.ADMIN);
+        validateAssignableRole(request.getRole());
+
+        ProjectMember member = projectMemberRepository.findByIdAndProjectId(memberId, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NOT_FOUND, memberId));
+        if (member.getRole() == ProjectRole.OWNER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        member.updateRole(request.getRole());
+        User actor = getUser(userId);
+        recordActivity(project, actor, ProjectActivityType.MEMBER_ROLE_UPDATED,
+                actor.getNickname() + " updated " + member.getUser().getNickname() + "'s role to " + request.getRole());
+        return ProjectDto.MemberResponse.from(member);
+    }
+
+    @Transactional
+    public void removeMember(Long userId, Long projectId, Long memberId) {
+        Project project = getProjectWithRole(userId, projectId, ProjectRole.OWNER, ProjectRole.ADMIN);
+        ProjectMember member = projectMemberRepository.findByIdAndProjectId(memberId, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NOT_FOUND, memberId));
+        if (member.getRole() == ProjectRole.OWNER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        projectMemberRepository.delete(member);
+        User actor = getUser(userId);
+        recordActivity(project, actor, ProjectActivityType.MEMBER_REMOVED,
+                actor.getNickname() + " removed " + member.getUser().getNickname() + " from the project");
+    }
+
+    public List<ProjectDto.ActivityResponse> getProjectActivities(Long userId, Long projectId) {
+        getAccessibleProject(userId, projectId);
+        return projectActivityRepository.findTop20ByProjectIdOrderByCreatedAtDesc(projectId)
+                .stream()
+                .map(ProjectDto.ActivityResponse::from)
+                .toList();
+    }
+
+    public Project getAccessibleProject(Long userId, Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
 
-        if (!project.getUser().getId().equals(userId)) {
+        if (project.getUser().getId().equals(userId)) {
+            return project;
+        }
+
+        if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
         return project;
+    }
+
+    public Project getProjectWithRole(Long userId, Long projectId, ProjectRole... allowedRoles) {
+        Project project = getAccessibleProject(userId, projectId);
+        ProjectRole role = getRole(project, userId);
+        for (ProjectRole allowedRole : allowedRoles) {
+            if (role == allowedRole) {
+                return project;
+            }
+        }
+        throw new BusinessException(ErrorCode.NO_PERMISSION);
+    }
+
+    public ProjectRole getRole(Project project, Long userId) {
+        if (project.getUser().getId().equals(userId)) {
+            return ProjectRole.OWNER;
+        }
+        return projectMemberRepository.findByProjectIdAndUserId(project.getId(), userId)
+                .map(ProjectMember::getRole)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NO_PERMISSION));
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND, userId));
+    }
+
+    private void validateAssignableRole(ProjectRole role) {
+        if (role == ProjectRole.OWNER) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "OWNER role cannot be assigned");
+        }
+    }
+
+    private long getVisibleMemberCount(Project project) {
+        if (project.getUser() == null) {
+            return projectMemberRepository.countByProjectId(project.getId());
+        }
+        long memberCount = projectMemberRepository.countByProjectId(project.getId());
+        boolean ownerHasMembership = projectMemberRepository.existsByProjectIdAndUserId(
+                project.getId(),
+                project.getUser().getId()
+        );
+        return ownerHasMembership ? memberCount : memberCount + 1;
+    }
+
+    private void recordActivity(Project project, User actor, ProjectActivityType type, String message) {
+        projectActivityRepository.save(ProjectActivity.builder()
+                .project(project)
+                .actor(actor)
+                .type(type)
+                .message(message)
+                .build());
     }
 }

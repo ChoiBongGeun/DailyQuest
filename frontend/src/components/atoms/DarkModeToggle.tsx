@@ -7,15 +7,6 @@ import { useUIStore } from '@/stores/ui-store';
 export const DarkModeToggle: React.FC = () => {
   const { theme, toggleTheme } = useUIStore();
 
-  React.useEffect(() => {
-    // 다크모드 클래스 적용
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
   return (
     <button
       onClick={toggleTheme}

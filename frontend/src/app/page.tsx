@@ -33,7 +33,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
       {/* Hero Section */}
       <div className="container-custom py-12 sm:py-16 lg:py-20">
         <div className="text-center max-w-4xl mx-auto">
@@ -48,7 +48,7 @@ export default function HomePage() {
             <span className="gradient-text">{t('landing.hero.title')}</span>
           </h1>
           
-          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 mb-7 sm:mb-8">
+          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 mb-7 sm:mb-8">
             {t('landing.hero.subtitle')}
           </p>
 
@@ -72,8 +72,8 @@ export default function HomePage() {
           </div>
 
           {/* Screenshot Preview */}
-          <div className="rounded-2xl overflow-hidden shadow-2xl border border-neutral-200 bg-white p-1">
-            <div className="aspect-video bg-gradient-to-br from-primary-100 to-primary-50 rounded-xl flex items-center justify-center">
+          <div className="rounded-2xl overflow-hidden shadow-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-1">
+            <div className="aspect-video bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-neutral-800 rounded-xl flex items-center justify-center">
               <p className="text-primary-600 font-medium">{t('common.appName')}</p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function HomePage() {
       <div className="container-custom py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-10 sm:mb-12">
           <h2 className="heading-2 mb-4">{t('landing.features.title')}</h2>
-          <p className="text-neutral-600">
+          <p className="text-neutral-600 dark:text-neutral-400">
             {t('landing.features.subtitle')}
           </p>
         </div>
@@ -95,15 +95,15 @@ export default function HomePage() {
             return (
               <div
                 key={index}
-                className="bg-white rounded-xl p-6 border border-neutral-200 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                className="bg-white dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
               >
-                <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-primary-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-neutral-600 text-sm leading-relaxed">
+                <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -132,8 +132,8 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-200 py-8">
-        <div className="container-custom text-center text-neutral-600">
+      <footer className="border-t border-neutral-200 dark:border-neutral-800 py-8">
+        <div className="container-custom text-center text-neutral-600 dark:text-neutral-400">
           <p>{t('landing.footer.copyright')}</p>
         </div>
       </footer>
