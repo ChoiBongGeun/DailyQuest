@@ -46,6 +46,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
+      data-testid="task-item"
       className={cn(
         'group relative bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 transition-all duration-200',
         'hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-700',

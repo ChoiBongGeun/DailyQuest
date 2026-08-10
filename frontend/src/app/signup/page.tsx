@@ -84,7 +84,7 @@ export default function SignUpPage() {
         <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-transparent dark:border-neutral-800 p-5 sm:p-8">
           <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-5 sm:mb-6">{t('auth.signupTitle')}</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
               label={t('auth.email')}
               type="email"
