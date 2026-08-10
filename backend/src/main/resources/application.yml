@@ -33,6 +33,23 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+
 jwt:
   secret: ${JWT_SECRET:dailyquest-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-security}
   expiration: ${JWT_EXPIRATION:86400000}
@@ -43,6 +60,11 @@ cors:
 
 app:
   frontend-url: ${FRONTEND_URL:${APP_FRONTEND_URL:http://localhost:3000}}
+  monitoring:
+    slow-request-threshold-ms: ${SLOW_REQUEST_THRESHOLD_MS:1000}
+    actuator:
+      username: ${ACTUATOR_USERNAME:actuator}
+      password: ${ACTUATOR_PASSWORD:actuator-local-password}
   mail:
     from: ${MAIL_FROM:no-reply@dailyquest.local}
   password-reset:

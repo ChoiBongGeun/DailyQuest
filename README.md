@@ -219,6 +219,11 @@ DB 마이그레이션 없이 Hibernate `@Formula`로 가상 컬럼(`priorityRank
 `application-prod.yml`: `FRONTEND_URL` 환경변수로 지정된 도메인만 허용  
 동일 코드베이스로 환경별 보안 정책을 다르게 적용합니다.
 
+### Production 환경 변수
+`application-prod.yml`은 다음 환경변수가 없으면 시작하지 않습니다.
+
+`FRONTEND_URL`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ACTUATOR_USERNAME`, `ACTUATOR_PASSWORD`
+
 ---
 
 ## 6. API 엔드포인트
