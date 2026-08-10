@@ -72,6 +72,9 @@ public class SecurityConfig {
                         "/api/users/forgot-password",
                         "/api/users/reset-password"
                 ).permitAll()
+                // Actuator - health만 공개, metrics/prometheus 등은 인증 필요
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").authenticated()
                 // All other API requires authentication
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
