@@ -15,3 +15,9 @@ cors:
 logging:
   level:
     com.dailyquest: INFO
+
+app:
+  monitoring:
+    actuator:
+      username: ${ACTUATOR_USERNAME}
+      password: ${ACTUATOR_PASSWORD}

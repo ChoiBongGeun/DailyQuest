@@ -389,7 +389,7 @@ export default function ProjectDetailPage() {
                 {(activities || []).map((item) => (
                   <div key={item.id} className="text-sm">
                     <p className="text-neutral-800 dark:text-neutral-100">{item.message}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{new Date(item.createdAt).toLocaleString()}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400" suppressHydrationWarning>{new Date(item.createdAt).toLocaleString()}</p>
                   </div>
                 ))}
                 {!activities?.length && <p className="text-sm text-neutral-500 dark:text-neutral-400">No activity yet.</p>}
