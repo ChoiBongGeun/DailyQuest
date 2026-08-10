@@ -2,6 +2,10 @@ import type { Page } from '@playwright/test';
 
 export async function loginAs(page: Page, email: string, password: string) {
   await page.goto('/login');
+  await submitLogin(page, email, password);
+}
+
+async function submitLogin(page: Page, email: string, password: string) {
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
   await page.getByRole('button', { name: '로그인' }).click();
@@ -20,5 +24,7 @@ export async function signupAndLogin(
   await page.locator('input[type="password"]').first().fill(password);
   await page.locator('input[type="password"]').last().fill(password);
   await page.getByRole('button', { name: '회원가입' }).click();
-  await page.waitForURL('**/dashboard');
+  await page.waitForURL('**/login');
+
+  await submitLogin(page, email, password);
 }
