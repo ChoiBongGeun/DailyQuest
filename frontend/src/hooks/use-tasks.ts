@@ -63,8 +63,11 @@ export const useCreateTask = () => {
 
   return useMutation({
     mutationFn: (data: TaskCreateRequest) => taskApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_task, data) => {
       queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
+      if (data.projectId) {
+        queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(data.projectId) });
+      }
     },
   });
 };

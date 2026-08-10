@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -82,32 +83,36 @@ public class TaskService {
     }
 
     public List<TaskDto.ListResponse> getAllTasks(Long userId) {
-        return taskRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                null,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 
     public List<TaskDto.ListResponse> getPendingTasks(Long userId) {
-        return taskRepository.findByUserIdAndIsCompleted(userId, false)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.equal(root.get("isCompleted"), false),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 
     public List<TaskDto.ListResponse> getCompletedTasks(Long userId) {
-        return taskRepository.findByUserIdAndIsCompleted(userId, true)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.equal(root.get("isCompleted"), true),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 
     public List<TaskDto.ListResponse> getTodayTasks(Long userId) {
         LocalDate today = LocalDate.now();
-        return taskRepository.findByUserIdAndDueDate(userId, today)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.equal(root.get("dueDate"), today),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 
     public List<TaskDto.ListResponse> getWeekTasks(Long userId) {
@@ -115,10 +120,11 @@ public class TaskService {
         LocalDate startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
-        return taskRepository.findByUserIdAndDueDateBetween(userId, startOfWeek, endOfWeek)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.between(root.get("dueDate"), startOfWeek, endOfWeek),
+                Sort.by(Sort.Order.asc("dueDate"), Sort.Order.desc("priority"))
+        );
     }
 
     public List<TaskDto.ListResponse> getTasksByProject(Long userId, Long projectId) {
@@ -153,18 +159,23 @@ public class TaskService {
     }
 
     public List<TaskDto.ListResponse> getTasksByPriority(Long userId, Priority priority) {
-        return taskRepository.findByUserIdAndPriorityOrderByDueDateAsc(userId, priority)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.equal(root.get("priority"), priority),
+                Sort.by(Sort.Direction.ASC, "dueDate")
+        );
     }
 
     public List<TaskDto.ListResponse> getOverdueTasks(Long userId) {
         LocalDate today = LocalDate.now();
-        return taskRepository.findOverdueTasks(userId, today)
-                .stream()
-                .map(TaskDto.ListResponse::from)
-                .collect(Collectors.toList());
+        return findVisibleUserTasks(
+                userId,
+                (root, cb) -> cb.and(
+                        cb.lessThan(root.get("dueDate"), today),
+                        cb.isFalse(root.get("isCompleted"))
+                ),
+                Sort.by(Sort.Direction.ASC, "dueDate")
+        );
     }
 
     public TaskDto.PageResponse searchTasks(
@@ -489,6 +500,49 @@ public class TaskService {
                 .build());
     }
 
+    private List<TaskDto.ListResponse> findVisibleUserTasks(
+            Long userId,
+            BiFunction<jakarta.persistence.criteria.Root<Task>, jakarta.persistence.criteria.CriteriaBuilder, jakarta.persistence.criteria.Predicate> extraPredicateFactory,
+            Sort sort
+    ) {
+        Specification<Task> spec = buildVisibleUserTaskSpecification(userId, extraPredicateFactory);
+        return taskRepository.findAll(spec, sort)
+                .stream()
+                .map(TaskDto.ListResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    private Specification<Task> buildVisibleUserTaskSpecification(
+            Long userId,
+            BiFunction<jakarta.persistence.criteria.Root<Task>, jakarta.persistence.criteria.CriteriaBuilder, jakarta.persistence.criteria.Predicate> extraPredicateFactory
+    ) {
+        return (root, query, cb) -> {
+            var projectJoin = root.join("project", jakarta.persistence.criteria.JoinType.LEFT);
+            var membershipSubquery = query.subquery(Long.class);
+            var memberRoot = membershipSubquery.from(ProjectMember.class);
+            membershipSubquery.select(memberRoot.get("id"))
+                    .where(
+                            cb.equal(memberRoot.get("project").get("id"), projectJoin.get("id")),
+                            cb.equal(memberRoot.get("user").get("id"), userId)
+                    );
+
+            var visibility = cb.or(
+                    cb.isNull(root.get("project")),
+                    cb.equal(projectJoin.get("user").get("id"), userId),
+                    cb.exists(membershipSubquery)
+            );
+
+            var ownedByUser = cb.equal(root.get("user").get("id"), userId);
+            var predicate = cb.and(ownedByUser, visibility);
+
+            if (extraPredicateFactory != null) {
+                predicate = cb.and(predicate, extraPredicateFactory.apply(root, cb));
+            }
+
+            return predicate;
+        };
+    }
+
     private Sort buildSort(String sortBy, String sortDir) {
         String sortField = sortBy == null ? "createdAt" : sortBy;
         boolean isDesc = sortDir == null || "desc".equalsIgnoreCase(sortDir);
@@ -532,6 +586,19 @@ public class TaskService {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
             if (projectId == null) {
                 predicates.add(cb.equal(root.get("user").get("id"), userId));
+                var projectJoin = root.join("project", jakarta.persistence.criteria.JoinType.LEFT);
+                var membershipSubquery = query.subquery(Long.class);
+                var memberRoot = membershipSubquery.from(ProjectMember.class);
+                membershipSubquery.select(memberRoot.get("id"))
+                        .where(
+                                cb.equal(memberRoot.get("project").get("id"), projectJoin.get("id")),
+                                cb.equal(memberRoot.get("user").get("id"), userId)
+                        );
+                predicates.add(cb.or(
+                        cb.isNull(root.get("project")),
+                        cb.equal(projectJoin.get("user").get("id"), userId),
+                        cb.exists(membershipSubquery)
+                ));
             } else {
                 predicates.add(cb.equal(root.get("project").get("id"), projectId));
             }

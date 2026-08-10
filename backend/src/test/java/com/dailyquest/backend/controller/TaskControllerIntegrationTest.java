@@ -3,7 +3,10 @@ package com.dailyquest.backend.controller;
 import com.dailyquest.backend.config.jwt.JwtTokenProvider;
 import com.dailyquest.backend.domain.Priority;
 import com.dailyquest.backend.domain.Project;
+import com.dailyquest.backend.domain.ProjectMember;
+import com.dailyquest.backend.domain.ProjectMemberRepository;
 import com.dailyquest.backend.domain.ProjectRepository;
+import com.dailyquest.backend.domain.ProjectRole;
 import com.dailyquest.backend.domain.Task;
 import com.dailyquest.backend.domain.TaskRepository;
 import com.dailyquest.backend.domain.User;
@@ -41,6 +44,9 @@ class TaskControllerIntegrationTest {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
     private TaskRepository taskRepository;
 
     @Autowired
@@ -50,6 +56,8 @@ class TaskControllerIntegrationTest {
     private JwtTokenProvider jwtTokenProvider;
 
     private Task ownerTask;
+    private Project ownerProject;
+    private User otherUser;
     private String otherUserToken;
 
     @BeforeEach
@@ -60,13 +68,13 @@ class TaskControllerIntegrationTest {
                 .nickname("owner")
                 .build());
 
-        User otherUser = userRepository.save(User.builder()
+        otherUser = userRepository.save(User.builder()
                 .email("other@test.com")
                 .password(passwordEncoder.encode("password123"))
                 .nickname("other")
                 .build());
 
-        Project ownerProject = projectRepository.save(Project.builder()
+        ownerProject = projectRepository.save(Project.builder()
                 .user(owner)
                 .name("Owner Project")
                 .color("#3B82F6")
@@ -93,5 +101,60 @@ class TaskControllerIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(403001));
+    }
+
+    @Test
+    @DisplayName("GET /api/tasks - removed project member cannot list shared project task they created")
+    void getAllTasks_ExcludesSharedProjectTask_WhenMembershipRemoved() throws Exception {
+        ProjectMember membership = projectMemberRepository.save(ProjectMember.builder()
+                .project(ownerProject)
+                .user(otherUser)
+                .role(ProjectRole.MEMBER)
+                .build());
+
+        Task sharedTask = taskRepository.save(Task.builder()
+                .user(otherUser)
+                .project(ownerProject)
+                .title("Removed Member Task")
+                .priority(Priority.HIGH)
+                .dueDate(LocalDate.now())
+                .isCompleted(false)
+                .isRecurring(false)
+                .build());
+        projectMemberRepository.delete(membership);
+        projectMemberRepository.flush();
+
+        mockMvc.perform(get("/api/tasks")
+                        .header("Authorization", "Bearer " + otherUserToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id == " + sharedTask.getId() + ")]").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/tasks/search - removed project member cannot search shared project task they created")
+    void searchTasks_ExcludesSharedProjectTask_WhenMembershipRemoved() throws Exception {
+        ProjectMember membership = projectMemberRepository.save(ProjectMember.builder()
+                .project(ownerProject)
+                .user(otherUser)
+                .role(ProjectRole.MEMBER)
+                .build());
+
+        Task sharedTask = taskRepository.save(Task.builder()
+                .user(otherUser)
+                .project(ownerProject)
+                .title("Removed Search Task")
+                .priority(Priority.HIGH)
+                .dueDate(LocalDate.now())
+                .isCompleted(false)
+                .isRecurring(false)
+                .build());
+        projectMemberRepository.delete(membership);
+        projectMemberRepository.flush();
+
+        mockMvc.perform(get("/api/tasks/search")
+                        .param("keyword", "Removed Search")
+                        .header("Authorization", "Bearer " + otherUserToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[?(@.id == " + sharedTask.getId() + ")]").isEmpty());
     }
 }

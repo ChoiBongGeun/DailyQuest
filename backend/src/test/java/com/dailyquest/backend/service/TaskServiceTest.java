@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -224,7 +226,7 @@ class TaskServiceTest {
     void getAllTasks() {
         // given
         List<Task> tasks = List.of(testTask);
-        given(taskRepository.findByUserIdOrderByCreatedAtDesc(1L)).willReturn(tasks);
+        given(taskRepository.findAll(any(Specification.class), any(Sort.class))).willReturn(tasks);
 
         // when
         List<TaskDto.ListResponse> response = taskService.getAllTasks(1L);
