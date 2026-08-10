@@ -10,6 +10,12 @@
 
 # testing
 /coverage
+/e2e/.auth
+/playwright-report
+/test-results
+
+# npm lock (yarn 프로젝트)
+package-lock.json
 
 # next.js
 /.next/

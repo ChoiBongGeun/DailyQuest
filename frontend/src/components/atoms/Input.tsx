@@ -24,26 +24,29 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const autoId = React.useId();
+    const inputId = props.id ?? autoId;
     const hasError = !!error;
 
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full')}>
         {label && (
-          <label className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <label htmlFor={inputId} className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
           </label>
         )}
-        
+
         <div className="relative">
           {leftIcon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {leftIcon}
             </div>
           )}
-          
+
           <input
             ref={ref}
+            id={inputId}
             className={cn(
               'w-full px-4 py-2.5 rounded-lg border transition-all duration-200',
               'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
