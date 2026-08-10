@@ -34,6 +34,7 @@ public enum ErrorCode {
     CONFLICT(409000, HttpStatus.CONFLICT, "Resource conflict"),
     EMAIL_ALREADY_EXISTS(409001, HttpStatus.CONFLICT, "Email already exists"),
     PROJECT_NAME_ALREADY_EXISTS(409002, HttpStatus.CONFLICT, "Project name already exists"),
+    PROJECT_MEMBER_ALREADY_EXISTS(409003, HttpStatus.CONFLICT, "Project member already exists"),
 
     // 500xxx - Internal Server Error
     INTERNAL_SERVER_ERROR(500000, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),

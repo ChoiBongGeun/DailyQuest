@@ -12,7 +12,7 @@
   - [x] P2) sortOrder not reset on project change — reset to null when task moved to different project
   - [x] P2) Reorder payload validation — reject non-permutation taskIds (missing/duplicate) with 400
   - [x] P2) Reorder failure rollback — restore optimistic order and show error toast on mutation failure
-- [ ] 6) Collaboration features (project sharing, member roles, activity log)
+- [x] 6) Collaboration features (project sharing, member roles, activity log)
 - [ ] 7) Quality/ops tooling (E2E tests, error tracking, API performance monitoring)
 - [ ] 8) Deployment/environment hardening (env template, runtime requirement docs)
 

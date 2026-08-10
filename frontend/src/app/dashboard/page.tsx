@@ -662,7 +662,7 @@ export default function Page() {
                         <div className="flex items-center gap-2">
                           <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-gradient-primary rounded-full transition-all"
+                              className="h-full gradient-primary rounded-full transition-all"
                               style={{ width: `${weekCompletionRate}%` }}
                             />
                           </div>

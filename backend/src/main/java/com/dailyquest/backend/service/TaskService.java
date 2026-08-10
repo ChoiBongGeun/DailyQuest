@@ -34,6 +34,8 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectActivityRepository projectActivityRepository;
 
     @Transactional
     public TaskDto.Response createTask(Long userId, TaskDto.CreateRequest request) {
@@ -42,11 +44,7 @@ public class TaskService {
 
         Project project = null;
         if (request.getProjectId() != null) {
-            project = projectRepository.findById(request.getProjectId())
-                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
-            if (!project.getUser().getId().equals(userId)) {
-                throw new BusinessException(ErrorCode.NO_PERMISSION);
-            }
+            project = getWritableProject(userId, request.getProjectId());
         }
 
         validateRecurringConfiguration(request.getIsRecurring(), request.getRecurrenceType());
@@ -69,13 +67,17 @@ public class TaskService {
                 .build();
 
         Task savedTask = taskRepository.save(task);
+        if (project != null) {
+            recordActivity(project, user, ProjectActivityType.TASK_CREATED,
+                    user.getNickname() + " created task \"" + savedTask.getTitle() + "\"");
+        }
         log.info("Task created: id={}, title={}", savedTask.getId(), savedTask.getTitle());
 
         return TaskDto.Response.from(savedTask);
     }
 
     public TaskDto.Response getTask(Long userId, Long taskId) {
-        Task task = getOwnedTask(userId, taskId);
+        Task task = getReadableTask(userId, taskId);
         return TaskDto.Response.from(task);
     }
 
@@ -120,14 +122,9 @@ public class TaskService {
     }
 
     public List<TaskDto.ListResponse> getTasksByProject(Long userId, Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+        getAccessibleProject(userId, projectId);
 
-        if (!project.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
-        }
-
-        return taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId)
+        return taskRepository.findByProjectIdOrderBySortOrder(projectId)
                 .stream()
                 .map(TaskDto.ListResponse::from)
                 .collect(Collectors.toList());
@@ -135,14 +132,9 @@ public class TaskService {
 
     @Transactional
     public void reorderProjectTasks(Long userId, Long projectId, List<Long> taskIds) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+        Project project = getWritableProject(userId, projectId);
 
-        if (!project.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
-        }
-
-        List<Task> tasks = taskRepository.findByProjectIdAndUserIdOrderBySortOrder(projectId, userId);
+        List<Task> tasks = taskRepository.findByProjectIdOrderBySortOrder(projectId);
         java.util.Map<Long, Task> taskMap = tasks.stream()
                 .collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
 
@@ -155,6 +147,9 @@ public class TaskService {
         for (int i = 0; i < taskIds.size(); i++) {
             taskMap.get(taskIds.get(i)).updateSortOrder(i);
         }
+        User actor = getUser(userId);
+        recordActivity(project, actor, ProjectActivityType.TASK_REORDERED,
+                actor.getNickname() + " reordered project tasks");
     }
 
     public List<TaskDto.ListResponse> getTasksByPriority(Long userId, Priority priority) {
@@ -187,6 +182,10 @@ public class TaskService {
         int safePage = page == null || page < 0 ? 0 : page;
         int safeSize = size == null || size < 1 ? 20 : Math.min(size, 100);
 
+        if (projectId != null) {
+            getAccessibleProject(userId, projectId);
+        }
+
         Pageable pageable = PageRequest.of(safePage, safeSize, buildSort(sortBy, sortDir));
         Specification<Task> spec = buildSearchSpecification(
                 userId,
@@ -218,6 +217,7 @@ public class TaskService {
     @Transactional
     public TaskDto.Response updateTask(Long userId, Long taskId, TaskDto.UpdateRequest request) {
         Task task = getOwnedTask(userId, taskId);
+        Project originalProject = task.getProject();
 
         if (request.getTitle() != null) {
             task.updateTitle(request.getTitle());
@@ -243,11 +243,7 @@ public class TaskService {
             task.updateReminderOffsets(offsets);
         }
         if (request.getProjectId() != null) {
-            Project project = projectRepository.findById(request.getProjectId())
-                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, request.getProjectId()));
-            if (!project.getUser().getId().equals(userId)) {
-                throw new BusinessException(ErrorCode.NO_PERMISSION);
-            }
+            Project project = getWritableProject(userId, request.getProjectId());
             Long currentProjectId = task.getProject() != null ? task.getProject().getId() : null;
             if (!request.getProjectId().equals(currentProjectId)) {
                 task.changeProject(project);
@@ -268,6 +264,12 @@ public class TaskService {
         }
 
         log.info("Task updated: id={}", taskId);
+        Project activityProject = task.getProject() != null ? task.getProject() : originalProject;
+        if (activityProject != null) {
+            User actor = getUser(userId);
+            recordActivity(activityProject, actor, ProjectActivityType.TASK_UPDATED,
+                    actor.getNickname() + " updated task \"" + task.getTitle() + "\"");
+        }
         return TaskDto.Response.from(task);
     }
 
@@ -281,6 +283,11 @@ public class TaskService {
         }
 
         task.complete();
+        if (task.getProject() != null) {
+            User actor = getUser(userId);
+            recordActivity(task.getProject(), actor, ProjectActivityType.TASK_COMPLETED,
+                    actor.getNickname() + " completed task \"" + task.getTitle() + "\"");
+        }
         log.info("Task completed: id={}", taskId);
 
         if (task.isRecurringTask()) {
@@ -295,6 +302,11 @@ public class TaskService {
         Task task = getOwnedTask(userId, taskId);
 
         task.uncomplete();
+        if (task.getProject() != null) {
+            User actor = getUser(userId);
+            recordActivity(task.getProject(), actor, ProjectActivityType.TASK_UNCOMPLETED,
+                    actor.getNickname() + " reopened task \"" + task.getTitle() + "\"");
+        }
         log.info("Task uncompleted: id={}", taskId);
         return TaskDto.Response.from(task);
     }
@@ -302,8 +314,15 @@ public class TaskService {
     @Transactional
     public void deleteTask(Long userId, Long taskId) {
         Task task = getOwnedTask(userId, taskId);
+        Project project = task.getProject();
+        String title = task.getTitle();
 
         taskRepository.delete(task);
+        if (project != null) {
+            User actor = getUser(userId);
+            recordActivity(project, actor, ProjectActivityType.TASK_DELETED,
+                    actor.getNickname() + " deleted task \"" + title + "\"");
+        }
         log.info("Task deleted: id={}", taskId);
     }
 
@@ -399,11 +418,74 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
 
+        if (task.getProject() != null) {
+            ensureWritableProjectAccess(userId, task.getProject());
+            return task;
+        }
+
         if (!task.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
         return task;
+    }
+
+    private Task getReadableTask(Long userId, Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+
+        if (task.getProject() != null) {
+            getAccessibleProject(userId, task.getProject().getId());
+            return task;
+        }
+
+        if (!task.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        return task;
+    }
+
+    private Project getAccessibleProject(Long userId, Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROJECT_NOT_FOUND, projectId));
+        if (project.getUser().getId().equals(userId)
+                || projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
+            return project;
+        }
+        throw new BusinessException(ErrorCode.NO_PERMISSION);
+    }
+
+    private Project getWritableProject(Long userId, Long projectId) {
+        Project project = getAccessibleProject(userId, projectId);
+        ensureWritableProjectAccess(userId, project);
+        return project;
+    }
+
+    private void ensureWritableProjectAccess(Long userId, Project project) {
+        if (project.getUser().getId().equals(userId)) {
+            return;
+        }
+        ProjectRole role = projectMemberRepository.findByProjectIdAndUserId(project.getId(), userId)
+                .map(ProjectMember::getRole)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NO_PERMISSION));
+        if (role == ProjectRole.VIEWER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND, userId));
+    }
+
+    private void recordActivity(Project project, User actor, ProjectActivityType type, String message) {
+        projectActivityRepository.save(ProjectActivity.builder()
+                .project(project)
+                .actor(actor)
+                .type(type)
+                .message(message)
+                .build());
     }
 
     private Sort buildSort(String sortBy, String sortDir) {
@@ -447,7 +529,11 @@ public class TaskService {
     ) {
         return (root, query, cb) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("user").get("id"), userId));
+            if (projectId == null) {
+                predicates.add(cb.equal(root.get("user").get("id"), userId));
+            } else {
+                predicates.add(cb.equal(root.get("project").get("id"), projectId));
+            }
 
             if (keyword != null && !keyword.isBlank()) {
                 String likeKeyword = "%" + keyword.trim().toLowerCase() + "%";
@@ -457,10 +543,6 @@ public class TaskService {
                         cb.like(cb.lower(cb.coalesce(root.get("description"), "")), likeKeyword),
                         cb.like(cb.lower(cb.coalesce(projectJoin.get("name"), "")), likeKeyword)
                 ));
-            }
-
-            if (projectId != null) {
-                predicates.add(cb.equal(root.get("project").get("id"), projectId));
             }
 
             if (priority != null) {
