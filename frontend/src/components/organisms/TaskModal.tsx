@@ -16,6 +16,7 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingTask?: Task | null;
+  projectIdForActivity?: number;
 }
 
 interface TaskFormData {
@@ -48,14 +49,14 @@ const EMPTY_FORM: TaskFormData = {
   recurrenceEndDate: '',
 };
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask, projectIdForActivity }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = React.useState<TaskFormData>(EMPTY_FORM);
   const [isCreatingProject, setIsCreatingProject] = React.useState(false);
   const [newProjectName, setNewProjectName] = React.useState('');
   const [newProjectColor, setNewProjectColor] = React.useState('#3B82F6');
   const createTask = useCreateTask();
-  const updateTask = useUpdateTask();
+  const updateTask = useUpdateTask(projectIdForActivity);
   const createProject = useCreateProject();
   const { data: projects } = useProjects();
   const defaultReminderOffsets = useUIStore((state) => state.reminderOffsets);

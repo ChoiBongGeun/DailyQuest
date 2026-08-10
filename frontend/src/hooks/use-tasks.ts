@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskApi } from '@/lib/api/task';
+import { PROJECT_KEYS } from './use-projects';
 import type { TaskCreateRequest, TaskSearchParams, TaskUpdateRequest } from '@/types';
 
 const TASK_KEYS = {
@@ -68,7 +69,7 @@ export const useCreateTask = () => {
   });
 };
 
-export const useUpdateTask = () => {
+export const useUpdateTask = (projectId?: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -76,22 +77,28 @@ export const useUpdateTask = () => {
       taskApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(projectId) });
+      }
     },
   });
 };
 
-export const useDeleteTask = () => {
+export const useDeleteTask = (projectId?: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: number) => taskApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(projectId) });
+      }
     },
   });
 };
 
-export const useSetTaskComplete = () => {
+export const useSetTaskComplete = (projectId?: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -99,6 +106,9 @@ export const useSetTaskComplete = () => {
       taskApi.setComplete(id, isCompleted),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(projectId) });
+      }
     },
   });
 };
@@ -110,6 +120,7 @@ export const useReorderProjectTasks = (projectId: number) => {
     mutationFn: (taskIds: number[]) => taskApi.reorderProjectTasks(projectId, taskIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASK_KEYS.byProject(projectId) });
+      queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.activities(projectId) });
     },
   });
 };

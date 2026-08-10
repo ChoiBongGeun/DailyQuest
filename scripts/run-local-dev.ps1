@@ -161,7 +161,7 @@ if ($backendPids.Count -eq 0) {
 Set-Location '$BackendDir'
 Write-Host 'Using JAVA_HOME=' `$env:JAVA_HOME
 java -version
-.\gradlew.bat bootRun
+.\gradlew.bat bootRun --args='--server.port=$BackendPort'
 "@
     $encodedBackendCommand = ConvertTo-EncodedPowerShellCommand $backendCommand
     Start-Process powershell -ArgumentList "-NoExit", "-EncodedCommand", $encodedBackendCommand | Out-Null
@@ -189,7 +189,7 @@ if ($frontendPids.Count -eq 0) {
 Set-Location '$FrontendDir'
 Write-Host 'Using Node ' (node -v)
 $frontendInstall
-yarn dev
+yarn dev --port $FrontendPort
 "@
     $encodedFrontendCommand = ConvertTo-EncodedPowerShellCommand $frontendCommand
     Start-Process powershell -ArgumentList "-NoExit", "-EncodedCommand", $encodedFrontendCommand | Out-Null

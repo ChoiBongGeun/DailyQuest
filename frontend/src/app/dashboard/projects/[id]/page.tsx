@@ -140,8 +140,8 @@ export default function ProjectDetailPage() {
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasksByProject(projectId);
   const { data: members } = useProjectMembers(projectId);
   const { data: activities } = useProjectActivities(projectId);
-  const setTaskComplete = useSetTaskComplete();
-  const deleteTask = useDeleteTask();
+  const setTaskComplete = useSetTaskComplete(projectId);
+  const deleteTask = useDeleteTask(projectId);
   const reorderTasks = useReorderProjectTasks(projectId);
   const shareProject = useShareProject(projectId);
   const updateMemberRole = useUpdateProjectMemberRole(projectId);
@@ -499,7 +499,12 @@ export default function ProjectDetailPage() {
         </div>
       </main>
 
-      <TaskModal isOpen={showTaskModal} onClose={() => { setShowTaskModal(false); setEditingTask(null); }} editingTask={editingTask} />
+      <TaskModal
+        isOpen={showTaskModal}
+        onClose={() => { setShowTaskModal(false); setEditingTask(null); }}
+        editingTask={editingTask}
+        projectIdForActivity={projectId}
+      />
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false, taskId: null })}

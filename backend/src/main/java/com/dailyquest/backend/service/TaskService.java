@@ -480,11 +480,12 @@ public class TaskService {
     }
 
     private void recordActivity(Project project, User actor, ProjectActivityType type, String message) {
+        String truncated = message.length() > 255 ? message.substring(0, 252) + "..." : message;
         projectActivityRepository.save(ProjectActivity.builder()
                 .project(project)
                 .actor(actor)
                 .type(type)
-                .message(message)
+                .message(truncated)
                 .build());
     }
 

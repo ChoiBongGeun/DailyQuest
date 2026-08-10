@@ -106,16 +106,35 @@ public class ProjectService {
             statsMap.put(projectId, new long[]{taskCount, completedCount});
         });
 
+        // Batch: 멤버십 전체 조회 (역할 + 멤버 수 + 오너 멤버십 여부)
+        Map<Long, ProjectRole> callerRoleMap = new HashMap<>();
+        Map<Long, Long> memberCountMap = new HashMap<>();
+        Map<Long, java.util.Set<Long>> projectMemberUserIds = new HashMap<>();
+
+        projectMemberRepository.findAllByProjectIdIn(projectIds).forEach(pm -> {
+            Long pid = pm.getProject().getId();
+            memberCountMap.merge(pid, 1L, Long::sum);
+            projectMemberUserIds.computeIfAbsent(pid, k -> new java.util.HashSet<>()).add(pm.getUser().getId());
+            if (pm.getUser().getId().equals(userId)) {
+                callerRoleMap.put(pid, pm.getRole());
+            }
+        });
+
         return projects.stream()
                 .map(project -> {
                     long[] stats = statsMap.getOrDefault(project.getId(), new long[]{0, 0});
-                    return ProjectDto.Response.from(
-                            project,
-                            stats[0],
-                            stats[1],
-                            getRole(project, userId),
-                            getVisibleMemberCount(project)
-                    );
+
+                    ProjectRole role = project.getUser().getId().equals(userId)
+                            ? ProjectRole.OWNER
+                            : callerRoleMap.getOrDefault(project.getId(), ProjectRole.MEMBER);
+
+                    long memberCount = memberCountMap.getOrDefault(project.getId(), 0L);
+                    boolean ownerIsMember = projectMemberUserIds
+                            .getOrDefault(project.getId(), java.util.Set.of())
+                            .contains(project.getUser().getId());
+                    long visibleMemberCount = ownerIsMember ? memberCount : memberCount + 1;
+
+                    return ProjectDto.Response.from(project, stats[0], stats[1], role, visibleMemberCount);
                 })
                 .collect(Collectors.toList());
     }
